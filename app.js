@@ -1216,6 +1216,7 @@ function syncInitialData() {
         saveState();
         updateAdminView();
         updateReportEmployeeSelect();
+        if (typeof renderValidationsView === 'function') renderValidationsView();
         console.log("Sincronización unificada completada con éxito.");
         updateCloudStatus('connected');
       } else {
@@ -8643,7 +8644,6 @@ function updateValidationEmployeeSelectOptions() {
 }
 
 function setupValidationsListeners() {
-  const searchInput = document.getElementById('val-input-search');
   const statusSelect = document.getElementById('val-select-status');
   const empSelect = document.getElementById('val-select-employee');
   const schedTypeSelect = document.getElementById('val-select-schedule-type');
@@ -8668,7 +8668,6 @@ function setupValidationsListeners() {
     if (typeof renderValidationsView === 'function') renderValidationsView();
   };
 
-  if (searchInput) searchInput.addEventListener('input', triggerFilter);
   if (statusSelect) statusSelect.addEventListener('change', triggerFilter);
   if (empSelect) empSelect.addEventListener('change', triggerFilter);
   if (schedTypeSelect) schedTypeSelect.addEventListener('change', triggerFilter);
@@ -8679,8 +8678,8 @@ function setupValidationsListeners() {
     quickMonthBtn.addEventListener('click', () => {
       const d = new Date();
       if (endDateInput) endDateInput.value = formatDateToInputISO(d);
-      d.setMonth(d.getMonth() - 1);
-      if (startDateInput) startDateInput.value = formatDateToInputISO(d);
+      const d1 = new Date(d.getFullYear(), d.getMonth(), 1);
+      if (startDateInput) startDateInput.value = formatDateToInputISO(d1);
       triggerFilter();
     });
   }
@@ -8705,12 +8704,103 @@ function setupValidationsListeners() {
       if (modal) modal.classList.add('hidden');
     });
   }
+
+  const btnOpenRules = document.getElementById('btn-open-rules-modal');
+  const btnCloseRules = document.getElementById('btn-val-rules-modal-close');
+
+  if (btnOpenRules) {
+    btnOpenRules.addEventListener('click', () => {
+      const modal = document.getElementById('modal-validation-rules');
+      if (modal) modal.classList.remove('hidden');
+    });
+  }
+
+  if (btnCloseRules) {
+    btnCloseRules.addEventListener('click', () => {
+      const modal = document.getElementById('modal-validation-rules');
+      if (modal) modal.classList.add('hidden');
+    });
+  }
+}
+
+function getWeekOfYear(dateObj) {
+  if (!dateObj || isNaN(dateObj.getTime())) return 1;
+  const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function getAllCachedHistory() {
+  const history = [];
+  
+  Object.keys(employeesDatabase).forEach(dni => {
+    const cleanEmpDni = String(dni).replace(/'/g, '').trim();
+    if (attendanceState[dni] && Array.isArray(attendanceState[dni].history)) {
+      attendanceState[dni].history.forEach(item => {
+        const itemDni = String(item.dni || cleanEmpDni).replace(/'/g, '').trim();
+        const itemWithDni = { ...item, dni: itemDni };
+        const exists = history.some(h => 
+          String(h.dni).replace(/'/g, '').trim() === itemWithDni.dni && 
+          h.timestamp === itemWithDni.timestamp && 
+          h.action === itemWithDni.action
+        );
+        if (!exists) {
+          history.push(itemWithDni);
+        }
+      });
+    }
+  });
+
+  if (Array.isArray(globalLogs)) {
+    globalLogs.forEach(item => {
+      const cleanDni = String(item.dni || '').replace(/'/g, '').trim();
+      if (!cleanDni) return;
+      const exists = history.some(h => 
+        String(h.dni).replace(/'/g, '').trim() === cleanDni && 
+        h.timestamp === item.timestamp && 
+        h.action === item.action
+      );
+      if (!exists) {
+        history.push({ ...item, dni: cleanDni });
+      }
+    });
+  }
+
+  return history;
+}
+
+function isEmployeeFlexibleSchedule(emp) {
+  if (!emp) return false;
+  
+  const roleStr = String(emp.role || emp.cargo || emp.puesto || '').toLowerCase().trim();
+  if (roleStr.includes('gerencia') || roleStr.includes('gerente') || roleStr.includes('director') || roleStr.includes('jefe de operaciones')) {
+    return true;
+  }
+
+  const workStartStr = String(emp.workStart || '').trim();
+  if (workStartStr === '—' || workStartStr === '-' || workStartStr === '' || workStartStr === 'null' || workStartStr === 'undefined') {
+    return true;
+  }
+
+  if (emp.weeklySchedule === 'flexible' || emp.scheduleType === 'flexible' || emp.scheduleType === 'flex') {
+    return true;
+  }
+
+  if (typeof emp.weeklySchedule === 'string') {
+    try {
+      const parsed = JSON.parse(emp.weeklySchedule);
+      if (parsed === 'flexible') return true;
+    } catch(e) {}
+  }
+
+  return false;
 }
 
 function renderValidationsView() {
   updateValidationEmployeeSelectOptions();
 
-  const searchVal = (document.getElementById('val-input-search')?.value || '').trim().toLowerCase();
   const statusVal = document.getElementById('val-select-status')?.value || 'all';
   const empVal = document.getElementById('val-select-employee')?.value || 'all';
   const schedTypeVal = document.getElementById('val-select-schedule-type')?.value || 'all';
@@ -8719,16 +8809,31 @@ function renderValidationsView() {
 
   const allHistory = getAllCachedHistory();
 
-  let minTime = -Infinity;
-  let maxTime = Infinity;
-
-  if (startDateVal) {
-    const dStart = new Date(startDateVal + 'T00:00:00');
-    if (!isNaN(dStart.getTime())) minTime = dStart.getTime();
-  }
+  let now = new Date();
+  
+  let dEnd = now;
   if (endDateVal) {
-    const dEnd = new Date(endDateVal + 'T23:59:59');
-    if (!isNaN(dEnd.getTime())) maxTime = dEnd.getTime();
+    const parts = endDateVal.split('-');
+    if (parts.length === 3) {
+      dEnd = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 23, 59, 59);
+    }
+  }
+  if (isNaN(dEnd.getTime())) dEnd = now;
+
+  let dStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+  if (startDateVal) {
+    const parts = startDateVal.split('-');
+    if (parts.length === 3) {
+      dStart = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 0, 0, 0);
+    }
+  }
+  if (isNaN(dStart.getTime())) dStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+
+  const july12026 = new Date(2026, 6, 1, 0, 0, 0);
+  let dStart6m = new Date(now);
+  dStart6m.setMonth(dStart6m.getMonth() - 6);
+  if (dStart6m < july12026) {
+    dStart6m = july12026;
   }
 
   const staffKeys = Object.keys(employeesDatabase);
@@ -8745,34 +8850,21 @@ function renderValidationsView() {
     const emp = employeesDatabase[dni];
     if (!emp) return;
 
-    if (empVal !== 'all' && String(dni).replace(/'/g, '').trim() !== empVal) {
+    const cleanDni = String(emp.dni || dni).replace(/'/g, '').trim();
+    const cleanEmpVal = String(empVal || '').replace(/'/g, '').trim();
+
+    if (cleanEmpVal !== 'all' && cleanDni !== cleanEmpVal) {
       return;
     }
 
-    if (searchVal) {
-      const matchName = (emp.name || '').toLowerCase().includes(searchVal);
-      const matchDni = String(dni).includes(searchVal);
-      const matchRole = (emp.role || '').toLowerCase().includes(searchVal);
-      if (!matchName && !matchDni && !matchRole) return;
-    }
-
-    let isFlex = false;
-    let schedStr = 'Fijo';
-    let weeklyObj = emp.weeklySchedule;
-    if (typeof weeklyObj === 'string') {
-      try { weeklyObj = JSON.parse(weeklyObj); } catch(e) {}
-    }
-    if (emp.weeklySchedule === 'flexible' || weeklyObj === 'flexible') {
-      isFlex = true;
-      schedStr = 'Flexible';
-    }
+    let isFlex = isEmployeeFlexibleSchedule(emp);
+    let schedStr = isFlex ? 'Flexible' : 'Fijo';
 
     if (schedTypeVal === 'fijo' && isFlex) return;
     if (schedTypeVal === 'flexible' && !isFlex) return;
 
-    const empMarks = allHistory.filter(h => String(h.dni) === String(dni) && h.timestamp >= minTime && h.timestamp <= maxTime);
-    empMarks.sort((a, b) => a.timestamp - b.timestamp);
-
+    const empMarks = allHistory.filter(h => String(h.dni || '').replace(/'/g, '').trim() === cleanDni);
+    
     const datesMap = {};
     empMarks.forEach(m => {
       const normD = normalizeDateStr(m.dateStr);
@@ -8782,114 +8874,236 @@ function renderValidationsView() {
 
     let totalTardanzasRango = 0;
     let weeklyTardanzasMap = {};
-    let totalFaltasRango = 0;
+    let totalFaltasMes = 0;
     let consecutiveAbsences = 0;
     let maxConsecutiveAbsences = 0;
     let tardinessAuditList = [];
+    let absenceAuditList = [];
 
-    const sortedDates = Object.keys(datesMap).sort((a, b) => {
-      const tsA = datesMap[a][0]?.timestamp || 0;
-      const tsB = datesMap[b][0]?.timestamp || 0;
-      return tsA - tsB;
-    });
+    const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-    sortedDates.forEach(dateStr => {
-      const marks = datesMap[dateStr];
+    let curr = new Date(dStart);
+    while (curr <= dEnd && curr <= now) {
+      const dateStr = getTodayNormalizedDateStr(curr);
+      const dayOfWeek = curr.getDay();
+
+      const justification = justificacionesDatabase.find(j => 
+        String(j.dni || '').replace(/'/g, '').trim() === cleanDni && 
+        normalizeDateStr(j.dateStr) === dateStr
+      );
+
+      const dStr = String(curr.getDate()).padStart(2, '0');
+      const mStr = String(curr.getMonth() + 1).padStart(2, '0');
+      const dayMonth = `${dStr}/${mStr}`;
+      const isStaticHoliday = GLOBAL_FERIADOS.includes(dayMonth);
+      const customHoliday = feriadosDatabase.find(f => normalizeDateStr(f.dateStr) === dateStr);
+      const isHoliday = isStaticHoliday || !!customHoliday;
+
+      let daySched = null;
+      let schedObj = emp.weeklySchedule;
+      if (typeof schedObj === 'string' && schedObj.trim() !== '') {
+        try { schedObj = JSON.parse(schedObj); } catch(e) { schedObj = null; }
+      }
+      if (schedObj && schedObj[dayOfWeek]) {
+        daySched = schedObj[dayOfWeek];
+      }
+      if (!daySched) {
+        if (dayOfWeek === 0) daySched = { isRestDay: true };
+        else daySched = { isRestDay: false };
+      }
+      const isRestDay = !!daySched.isRestDay;
+
+      const marks = datesMap[dateStr] || [];
       const hasIngreso = marks.some(m => m.action === 'Ingreso');
 
       if (!hasIngreso) {
-        totalFaltasRango++;
-        consecutiveAbsences++;
-        if (consecutiveAbsences > maxConsecutiveAbsences) {
-          maxConsecutiveAbsences = consecutiveAbsences;
+        if (!justification && !isRestDay && !isHoliday && !isFlex) {
+          totalFaltasMes++;
+          consecutiveAbsences++;
+          if (consecutiveAbsences > maxConsecutiveAbsences) {
+            maxConsecutiveAbsences = consecutiveAbsences;
+          }
+          absenceAuditList.push({
+            dateStr: dateStr,
+            dayName: dayNames[dayOfWeek] || '',
+            detalle: 'Sin marcado de ingreso registrado ni justificación',
+            dictamen: 'Falta Injustificada'
+          });
+        } else {
+          consecutiveAbsences = 0;
         }
       } else {
         consecutiveAbsences = 0;
         const report = calculateWorkedTimesForDate(marks, emp, dateStr);
-        if (report && report.tardiness) {
-          totalTardanzasRango++;
-          const minsLate = report.tardinessMinutes || 0;
+        const entradaRealStr = report ? (report.entradaReal || report.firstIngresoTimeStr) : null;
 
-          const parsedD = parseDayMonthYear(dateStr);
-          let weekKey = 'W1';
-          if (parsedD) {
-            const dObj = new Date(parsedD.year, parsedD.month - 1, parsedD.day);
-            const wNum = getWeekOfYear(dObj);
-            weekKey = `${parsedD.year}-W${wNum}`;
+        if (report && entradaRealStr && entradaRealStr !== '---' && !isFlex && !isRestDay && !isHoliday) {
+          const entrySecs = timeStrToSeconds(entradaRealStr);
+          const workStartStr = daySched.workStart || emp.workStart || "08:00";
+          const workStartSecs = timeStrToSeconds(workStartStr);
+          const minsLate = Math.max(0, Math.floor((entrySecs - workStartSecs) / 60));
+
+          if (minsLate > 0) {
+            const wNum = getWeekOfYear(curr);
+            const weekKey = `${curr.getFullYear()}-W${wNum}`;
+
+            if (!weeklyTardanzasMap[weekKey]) {
+              weeklyTardanzasMap[weekKey] = {
+                toleranceUsedDays: 0,
+                totalLateDays: 0,
+                exceededQuota: false
+              };
+            }
+
+            weeklyTardanzasMap[weekKey].totalLateDays++;
+
+            let dictamen = '';
+            let statusTag = '';
+            let isTardanzaEfectiva = false;
+
+            if (minsLate > 10) {
+              dictamen = `Exceso >10m (${minsLate} min)`;
+              statusTag = 'exceeded';
+              isTardanzaEfectiva = true;
+            } else {
+              weeklyTardanzasMap[weekKey].toleranceUsedDays++;
+              if (weeklyTardanzasMap[weekKey].toleranceUsedDays <= 2) {
+                dictamen = `Tolerancia (${minsLate}m - Día ${weeklyTardanzasMap[weekKey].toleranceUsedDays}/2)`;
+                statusTag = 'tolerated';
+                isTardanzaEfectiva = false;
+              } else {
+                dictamen = `Excede Cuota Semanal (${minsLate}m - Día ${weeklyTardanzasMap[weekKey].toleranceUsedDays} de tol.)`;
+                statusTag = 'quota_exceeded';
+                isTardanzaEfectiva = true;
+                weeklyTardanzasMap[weekKey].exceededQuota = true;
+              }
+            }
+
+            if (isTardanzaEfectiva) {
+              totalTardanzasRango++;
+            }
+
+            const dayOfWeekCurr = curr.getDay();
+            const mondayOffset = dayOfWeekCurr === 0 ? -6 : 1 - dayOfWeekCurr;
+            const sundayOffset = dayOfWeekCurr === 0 ? 0 : 7 - dayOfWeekCurr;
+            
+            const mondayDate = new Date(curr);
+            mondayDate.setDate(curr.getDate() + mondayOffset);
+            const sundayDate = new Date(curr);
+            sundayDate.setDate(curr.getDate() + sundayOffset);
+
+            const mD = String(mondayDate.getDate()).padStart(2, '0');
+            const mM = String(mondayDate.getMonth() + 1).padStart(2, '0');
+            const sD = String(sundayDate.getDate()).padStart(2, '0');
+            const sM = String(sundayDate.getMonth() + 1).padStart(2, '0');
+            const weekRangeStr = `${mD}/${mM} al ${sD}/${sM}`;
+
+            tardinessAuditList.push({
+              dateStr: dateStr,
+              timeStr: entradaRealStr,
+              workStart: workStartStr,
+              minsLate: minsLate,
+              dictamen: dictamen,
+              statusTag: statusTag,
+              weekKey: weekKey,
+              wNum: wNum,
+              weekRangeStr: weekRangeStr,
+              isTardanzaEfectiva: isTardanzaEfectiva
+            });
           }
-
-          if (!weeklyTardanzasMap[weekKey]) {
-            weeklyTardanzasMap[weekKey] = 0;
-          }
-          weeklyTardanzasMap[weekKey]++;
-          const tardyCountInWeek = weeklyTardanzasMap[weekKey];
-
-          let dictamen = 'Tolerado (<=10m)';
-          let statusTag = 'tolerated';
-
-          if (minsLate > 10) {
-            dictamen = 'Exceso (>10m)';
-            statusTag = 'exceeded';
-          } else if (tardyCountInWeek > 2) {
-            dictamen = 'Excede Cuota Semanal (Máx. 2)';
-            statusTag = 'quota_exceeded';
-          }
-
-          tardinessAuditList.push({
-            dateStr: dateStr,
-            timeStr: report.firstIngresoTimeStr || '---',
-            workStart: report.workStartStr || '08:00',
-            minsLate: minsLate,
-            dictamen: dictamen,
-            statusTag: statusTag,
-            weekKey: weekKey
-          });
         }
       }
-    });
+
+      curr.setDate(curr.getDate() + 1);
+    }
+
+    let totalFaltas6m = 0;
+    let curr6m = new Date(dStart6m);
+    while (curr6m <= dEnd && curr6m <= now) {
+      const dateStr6m = getTodayNormalizedDateStr(curr6m);
+      const dayOfWeek6m = curr6m.getDay();
+
+      const justification = justificacionesDatabase.find(j => 
+        String(j.dni || '').replace(/'/g, '').trim() === cleanDni && 
+        normalizeDateStr(j.dateStr) === dateStr6m
+      );
+
+      const dStr = String(curr6m.getDate()).padStart(2, '0');
+      const mStr = String(curr6m.getMonth() + 1).padStart(2, '0');
+      const dayMonth = `${dStr}/${mStr}`;
+      const isHoliday = GLOBAL_FERIADOS.includes(dayMonth) || !!feriadosDatabase.find(f => normalizeDateStr(f.dateStr) === dateStr6m);
+
+      let daySched = null;
+      let schedObj = emp.weeklySchedule;
+      if (typeof schedObj === 'string' && schedObj.trim() !== '') {
+        try { schedObj = JSON.parse(schedObj); } catch(e) { schedObj = null; }
+      }
+      if (schedObj && schedObj[dayOfWeek6m]) {
+        daySched = schedObj[dayOfWeek6m];
+      }
+      if (!daySched) {
+        if (dayOfWeek6m === 0) daySched = { isRestDay: true };
+        else daySched = { isRestDay: false };
+      }
+      const isRestDay = !!daySched.isRestDay;
+
+      const marks = datesMap[dateStr6m] || [];
+      const hasIngreso = marks.some(m => m.action === 'Ingreso');
+
+      if (!hasIngreso && !justification && !isRestDay && !isHoliday && !isFlex) {
+        totalFaltas6m++;
+      }
+
+      curr6m.setDate(curr6m.getDate() + 1);
+    }
 
     const convertedFaltas3to1 = Math.floor(totalTardanzasRango / 3);
-    const totalEffectiveFaltas = totalFaltasRango + convertedFaltas3to1;
+    const totalEffectiveFaltasMes = totalFaltasMes + convertedFaltas3to1;
+    const totalEffectiveFaltas6m = totalFaltas6m + convertedFaltas3to1;
 
     let rule1_excesoTolerancia = false;
     Object.keys(weeklyTardanzasMap).forEach(wk => {
-      if (weeklyTardanzasMap[wk] > 2) rule1_excesoTolerancia = true;
+      if (weeklyTardanzasMap[wk].toleranceUsedDays > 2 || weeklyTardanzasMap[wk].exceededQuota) {
+        rule1_excesoTolerancia = true;
+      }
     });
 
-    let rule2_bajaAutomatica = maxConsecutiveAbsences >= 3;
-    let rule3_retiroMes = (totalEffectiveFaltas >= 5 || convertedFaltas3to1 >= 3);
-    let rule4_retiroSemestral = totalEffectiveFaltas >= 15;
+    let rule2_bajaAutomatica = !isFlex && maxConsecutiveAbsences >= 3;
+    let rule3_retiroMes = !isFlex && (totalEffectiveFaltasMes >= 5 || convertedFaltas3to1 >= 3 || (convertedFaltas3to1 >= 2 && totalFaltasMes >= 1));
+    let rule4_retiroSemestral = !isFlex && totalEffectiveFaltas6m >= 15;
 
     let finalStatus = 'En Regla';
     let statusClass = 'val-status-ok';
     let statusBadgeText = '✅ En Regla';
-    let primaryCause = 'Sin Infracciones Detectadas';
+    let primaryCause = isFlex ? 'Horario Flexible - Exento de Infracciones' : 'Sin Infracciones Detectadas';
 
     if (rule2_bajaAutomatica) {
       finalStatus = 'Baja Automática';
       statusClass = 'val-status-baja';
-      statusBadgeText = '🚨 BAJA AUTOMÁTICA';
+      statusBadgeText = '🚨 Baja Automática';
       primaryCause = 'Inasistencia injustificada por 3 días consecutivos';
       countBaja++;
     } else if (rule3_retiroMes || rule4_retiroSemestral) {
       finalStatus = 'Causal de Retiro';
       statusClass = 'val-status-retiro';
-      if (convertedFaltas3to1 >= 3 && !rule4_retiroSemestral) {
-        statusBadgeText = '⛔ RETIRO (3 Faltas por Tardanza)';
-        primaryCause = 'Acumulación de 3 faltas por tardanzas (9 tardanzas en el mes)';
+      if ((convertedFaltas3to1 >= 3 || (convertedFaltas3to1 >= 2 && totalFaltasMes >= 1)) && !rule4_retiroSemestral) {
+        statusBadgeText = '⛔ Retiro de la Empresa (Tardanzas Acumuladas)';
+        primaryCause = convertedFaltas3to1 >= 3 
+          ? 'Acumulación de 3 faltas por tardanzas (9 tardanzas efectivas)'
+          : 'Combinación de 2 faltas por tardanza (6 tardanzas) y 1 falta injustificada';
       } else if (rule4_retiroSemestral) {
-        statusBadgeText = '⛔ RETIRO (15+ Faltas 6M)';
-        primaryCause = 'Acumulación de 15 o más faltas en el período de 6 meses';
+        statusBadgeText = '⛔ Retiro de la Empresa (15 Faltas 6 Meses)';
+        primaryCause = 'Acumulación de 15 o más faltas en 6 meses';
       } else {
-        statusBadgeText = '⛔ RETIRO (5+ Faltas Mes)';
+        statusBadgeText = '⛔ Retiro de la Empresa (5 Faltas Acumuladas)';
         primaryCause = 'Acumulación de 5 o más faltas en el mes';
       }
       countRetiro++;
-    } else if (rule1_excesoTolerancia) {
+    } else if (rule1_excesoTolerancia && !isFlex) {
       finalStatus = 'Exceso Tolerancia';
       statusClass = 'val-status-warning';
-      statusBadgeText = '⚠️ EXCESO TOLERANCIA';
-      primaryCause = 'Más de 2 tardanzas de tolerancia en la misma semana';
+      statusBadgeText = '⚠️ Exceso Tolerancia';
+      primaryCause = 'Más de 2 días de tolerancia a la semana o tardanzas >10m';
       countExceso++;
     }
 
@@ -8899,14 +9113,17 @@ function renderValidationsView() {
 
     countTotal++;
 
-    cachedValidationDataMap[dni] = {
+    cachedValidationDataMap[cleanDni] = {
       emp: emp,
+      cleanDni: cleanDni,
       isFlex: isFlex,
       schedStr: schedStr,
       totalTardanzasRango: totalTardanzasRango,
       convertedFaltas3to1: convertedFaltas3to1,
-      totalFaltasRango: totalFaltasRango,
-      totalEffectiveFaltas: totalEffectiveFaltas,
+      totalFaltasMes: totalFaltasMes,
+      totalFaltas6m: totalFaltas6m,
+      totalEffectiveFaltasMes: totalEffectiveFaltasMes,
+      totalEffectiveFaltas6m: totalEffectiveFaltas6m,
       maxConsecutiveAbsences: maxConsecutiveAbsences,
       rule1_excesoTolerancia: rule1_excesoTolerancia,
       rule2_bajaAutomatica: rule2_bajaAutomatica,
@@ -8916,10 +9133,11 @@ function renderValidationsView() {
       statusBadgeText: statusBadgeText,
       statusClass: statusClass,
       primaryCause: primaryCause,
-      tardinessAuditList: tardinessAuditList
+      tardinessAuditList: tardinessAuditList,
+      absenceAuditList: absenceAuditList
     };
 
-    resultRows.push(cachedValidationDataMap[dni]);
+    resultRows.push(cachedValidationDataMap[cleanDni]);
   });
 
   const elTotal = document.getElementById('val-stat-total');
@@ -8940,27 +9158,61 @@ function renderValidationsTableRows(dataArray) {
   if (!tbody) return;
   tbody.innerHTML = '';
 
+  const statusVal = document.getElementById('val-select-status')?.value || 'all';
+
   if (!dataArray || dataArray.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 32px; color: #94a3b8;">No se encontraron registros que coincidan con los filtros aplicados.</td></tr>`;
+    let msg = 'No se encontraron registros que coincidan con los filtros aplicados.';
+    if (statusVal !== 'all') {
+      msg = `No existen colaboradores con dictamen <strong>"${escapeHtml(statusVal)}"</strong> en el rango seleccionado.<br><span style="font-size: 0.82rem; color: #64748b;">(Sugerencia: Cambie el filtro "Dictamen / Sanción" a <strong>"Todos los Estados"</strong> para visualizar el estado general).</span>`;
+    }
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 36px 20px; color: #94a3b8; line-height: 1.6;">${msg}</td></tr>`;
     return;
   }
 
   dataArray.forEach(item => {
     const emp = item.emp;
-    const cleanDni = String(emp.dni).replace(/'/g, '').trim();
+    const cleanDni = String(emp.dni || item.cleanDni).replace(/'/g, '').trim();
+
+    // Lógica Metodológica de Badges para Tardanzas (3 = 1 Falta):
+    // >= 3 faltas -> Rojo (danger)
+    // == 2 faltas -> Naranja (warning)
+    // == 1 falta  -> Azul (info)
+    // == 0 faltas -> Neutral
+    let tardinessBadgeClass = 'val-tardiness-neutral';
+    if (item.convertedFaltas3to1 >= 3) {
+      tardinessBadgeClass = 'val-tardiness-danger';
+    } else if (item.convertedFaltas3to1 === 2) {
+      tardinessBadgeClass = 'val-tardiness-warning';
+    } else if (item.convertedFaltas3to1 === 1) {
+      tardinessBadgeClass = 'val-tardiness-info';
+    }
+
+    // Lógica Metodológica de Badges para Faltas (Mes / 6M):
+    // >= 5 faltas mes o >= 15 faltas 6M -> Rojo (danger)
+    // >= 1 falta mes o >= 1 falta 6M    -> Naranja (warning)
+    // == 0 -> Neutral
+    let faltasBadgeClass = 'val-faltas-neutral';
+    if (item.totalFaltasMes >= 5 || item.totalFaltas6m >= 15) {
+      faltasBadgeClass = 'val-faltas-danger';
+    } else if (item.totalFaltasMes >= 1 || item.totalFaltas6m >= 1) {
+      faltasBadgeClass = 'val-faltas-warning';
+    }
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="table-employee-name">${escapeHtml(emp.name)}</td>
       <td>${escapeHtml(cleanDni)}</td>
-      <td><span class="val-pill-tag ${item.isFlex ? 'val-pill-flex' : 'val-pill-fijo'}">${item.schedStr}</span></td>
-      <td><span class="val-badge ${item.statusClass}">${item.statusBadgeText}</span></td>
-      <td style="max-width: 260px; font-size: 0.85rem; color: var(--text-muted, #94a3b8);">${escapeHtml(item.primaryCause)}</td>
       <td>
-        <span class="${item.totalTardanzasRango > 0 ? 'val-text-amber' : ''}" style="font-weight: 600;">
-          ${item.totalTardanzasRango} ${item.convertedFaltas3to1 > 0 ? `<small style="opacity: 0.8;">(+${item.convertedFaltas3to1} falta conversion)</small>` : ''}
+        <span class="val-tardiness-badge ${tardinessBadgeClass}">
+          ${item.totalTardanzasRango} (${item.convertedFaltas3to1} faltas)
         </span>
       </td>
+      <td>
+        <span class="val-faltas-badge ${faltasBadgeClass}">
+          ${item.totalFaltasMes} / ${item.totalFaltas6m}
+        </span>
+      </td>
+      <td><span class="val-badge ${item.statusClass}">${item.statusBadgeText}</span></td>
       <td>
         <button type="button" class="btn-table-action btn-admin-edit" onclick="openValidationDetailsModal('${escapeHtml(cleanDni)}')" style="display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; cursor: pointer;">
           <span class="material-symbols-rounded" style="font-size: 16px;">search</span>
@@ -8992,8 +9244,8 @@ function openValidationDetailsModal(dni) {
 
   document.getElementById('val-modal-stat-tardiness').textContent = data.totalTardanzasRango;
   document.getElementById('val-modal-stat-converted').textContent = data.convertedFaltas3to1;
-  document.getElementById('val-modal-stat-month-faltas').textContent = data.totalFaltasRango;
-  document.getElementById('val-modal-stat-total-faltas').textContent = data.totalEffectiveFaltas;
+  document.getElementById('val-modal-stat-month-faltas').textContent = data.totalFaltasMes;
+  document.getElementById('val-modal-stat-total-faltas').textContent = data.totalFaltas6m;
   document.getElementById('val-modal-stat-consecutive').textContent = data.maxConsecutiveAbsences;
 
   const alertContainer = document.getElementById('val-modal-alert-container');
@@ -9025,20 +9277,51 @@ function openValidationDetailsModal(dni) {
     }
   }
 
+  const absencesContainer = document.getElementById('val-modal-absences-container');
+  if (absencesContainer) {
+    absencesContainer.innerHTML = '';
+    const list = data.absenceAuditList || [];
+    if (list.length === 0) {
+      absencesContainer.innerHTML = `<span style="color: var(--text-muted, #94a3b8); font-size: 0.85rem; padding: 4px;">No se registraron faltas injustificadas en el período auditado.</span>`;
+    } else {
+      list.forEach(a => {
+        const badge = document.createElement('span');
+        badge.className = 'val-absence-badge';
+        badge.innerHTML = `<span class="material-symbols-rounded" style="font-size: 14px;">event_busy</span> <span>${escapeHtml(a.dateStr)}</span>`;
+        absencesContainer.appendChild(badge);
+      });
+    }
+  }
+
   const tbody = document.getElementById('val-modal-tardiness-tbody');
   if (tbody) {
     tbody.innerHTML = '';
     const list = data.tardinessAuditList || [];
     if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 24px; color: #94a3b8;">No se registraron tardanzas ni incidencias en el período auditado.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94a3b8;">No se registraron tardanzas ni incidencias en el período auditado.</td></tr>`;
     } else {
+      let lastWeekKey = '';
       list.forEach(t => {
+        if (t.weekKey !== lastWeekKey) {
+          lastWeekKey = t.weekKey;
+          const trHeader = document.createElement('tr');
+          trHeader.className = 'val-week-divider-row';
+          trHeader.innerHTML = `
+            <td colspan="5" style="background: rgba(99, 102, 241, 0.12); color: #818cf8; font-weight: 700; font-size: 0.8rem; padding: 8px 12px; border-top: 1px solid rgba(99, 102, 241, 0.25); border-bottom: 1px solid rgba(99, 102, 241, 0.25);">
+              <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: text-bottom; margin-right: 4px;">date_range</span>
+              <span>Semana ${t.wNum} (Rango: ${t.weekRangeStr})</span>
+            </td>
+          `;
+          tbody.appendChild(trHeader);
+        }
+
         let pillClass = 'val-pill-tolerated';
         if (t.statusTag === 'exceeded') pillClass = 'val-pill-exceeded';
         else if (t.statusTag === 'quota_exceeded') pillClass = 'val-pill-quota';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
+          <td><span style="background: rgba(99, 102, 241, 0.18); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 2px 8px; border-radius: 12px; font-weight: 600; font-size: 0.78rem;">Sem. ${t.wNum}</span></td>
           <td>${t.dateStr}</td>
           <td>${t.timeStr} (Inicio: ${t.workStart})</td>
           <td style="font-weight: 600;" class="val-text-amber">+${t.minsLate} min</td>
