@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260724_21">
+  <link rel="stylesheet" href="styles.css?v=20260722_6">
 </head>
 <body>
 
@@ -260,35 +260,35 @@
           <div class="admin-sidebar-nav-container">
             <span class="sidebar-nav-title">Navegación</span>
             <nav class="admin-tabs-nav vertical">
-              <button type="button" class="btn-admin-tab active" data-tab="live" onclick="switchAdminTab('live')">
+              <button class="btn-admin-tab active" data-tab="live" onclick="switchAdminTab('live')">
                 <span class="material-symbols-rounded">sensors</span>
                 <span>Monitoreo en Vivo</span>
               </button>
-              <button type="button" class="btn-admin-tab" data-tab="daily" onclick="switchAdminTab('daily')">
+              <button class="btn-admin-tab" data-tab="daily" onclick="switchAdminTab('daily')">
                 <span class="material-symbols-rounded">calendar_today</span>
                 <span>Resumen Diario</span>
               </button>
-              <button type="button" class="btn-admin-tab" data-tab="consolidated" onclick="switchAdminTab('consolidated')">
+              <button class="btn-admin-tab" data-tab="consolidated" onclick="switchAdminTab('consolidated')">
                 <span class="material-symbols-rounded">table_chart</span>
                 <span>Resumen General</span>
               </button>
-              <button type="button" class="btn-admin-tab" data-tab="monthly" onclick="switchAdminTab('monthly')">
+              <button class="btn-admin-tab" data-tab="monthly" onclick="switchAdminTab('monthly')">
                 <span class="material-symbols-rounded">calendar_month</span>
                 <span>Resumen Mensual</span>
               </button>
-              <button type="button" class="btn-admin-tab" data-tab="reports" onclick="switchAdminTab('reports')">
+              <button class="btn-admin-tab" data-tab="reports" onclick="switchAdminTab('reports')">
                 <span class="material-symbols-rounded">analytics</span>
                 <span>Reportes por Agente</span>
               </button>
-              <button type="button" class="btn-admin-tab" data-tab="gerencial" onclick="switchAdminTab('gerencial')">
+              <button class="btn-admin-tab" data-tab="gerencial" onclick="switchAdminTab('gerencial')">
                 <span class="material-symbols-rounded">leaderboard</span>
                 <span>Vista Gerencial</span>
               </button>
-              <button type="button" class="btn-admin-tab" data-tab="validations" onclick="switchAdminTab('validations')">
+              <button class="btn-admin-tab" data-tab="validations" onclick="switchAdminTab('validations')">
                 <span class="material-symbols-rounded">gavel</span>
                 <span>Validaciones y Sanciones</span>
               </button>
-              <button type="button" class="btn-admin-tab" data-tab="register" onclick="switchAdminTab('register')">
+              <button class="btn-admin-tab" data-tab="register" onclick="switchAdminTab('register')">
                 <span class="material-symbols-rounded">settings</span>
                 <span>Gestión y Configuración</span>
               </button>
@@ -638,188 +638,130 @@
           </div>
         </div>
 
-        <!-- CONTENIDO PESTAÑA: VALIDACIONES Y SANCIONES -->
+        <!-- PESTAÑA: CONTROL DE VALIDACIONES Y SANCIONES -->
         <div id="tab-validations-content" class="admin-tab-content hidden">
-          <div style="padding: 10px 0 20px 0;">
-            
-            <!-- Panel de Métricas de Validaciones -->
-            <div class="admin-analytics-grid" style="margin-bottom: 20px;">
-              <div class="analytics-card card-inner">
-                <div class="analytics-card-header">
-                  <span class="material-symbols-rounded text-gradient color-blue">groups</span>
-                  <span class="analytics-card-title">Evaluados</span>
-                </div>
-                <div class="analytics-card-value" id="val-stat-total">0</div>
-                <div class="analytics-card-subtitle">Colaboradores en sistema</div>
+          <!-- Tarjetas de Resumen KPI -->
+          <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Evaluados en Rango</span>
+                <span class="material-symbols-rounded metric-icon" style="color: #6366f1;">badge</span>
               </div>
-
-              <div class="analytics-card card-inner">
-                <div class="analytics-card-header">
-                  <span class="material-symbols-rounded text-gradient color-red">gavel</span>
-                  <span class="analytics-card-title">Baja Automática</span>
-                </div>
-                <div class="analytics-card-value" id="val-stat-baja" style="color: #f87171;">0</div>
-                <div class="analytics-card-subtitle">3+ Faltas consecutivas</div>
-              </div>
-
-              <div class="analytics-card card-inner">
-                <div class="analytics-card-header">
-                  <span class="material-symbols-rounded text-gradient color-purple" style="color: #fb923c;">block</span>
-                  <span class="analytics-card-title">Causal de Retiro</span>
-                </div>
-                <div class="analytics-card-value" id="val-stat-retiro" style="color: #fb923c;">0</div>
-                <div class="analytics-card-subtitle">5+ Faltas/mes ó 15+/6M</div>
-              </div>
-
-              <div class="analytics-card card-inner">
-                <div class="analytics-card-header">
-                  <span class="material-symbols-rounded text-gradient color-yellow">warning</span>
-                  <span class="analytics-card-title">Exceso Tolerancia</span>
-                </div>
-                <div class="analytics-card-value" id="val-stat-tolerancia" style="color: #facc15;">0</div>
-                <div class="analytics-card-subtitle">> 2 Tardanzas esta semana</div>
+              <div class="metric-value-container">
+                <span class="metric-value" id="val-stat-total">0</span>
               </div>
             </div>
 
-            <!-- Resumen Informativo de Reglas Aplicadas -->
-            <div class="card-inner" style="margin-bottom: 20px; padding: 18px;">
-              <div class="inner-header" style="margin-bottom: 10px;">
-                <h3>Reglas de Asistencia y Política de Sanciones</h3>
-                <span class="material-symbols-rounded text-gradient">policy</span>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Baja Automática</span>
+                <span class="material-symbols-rounded metric-icon" style="color: #ef4444;">warning</span>
               </div>
-              <div class="rules-grid">
-                <div class="rule-card">
-                  <span class="material-symbols-rounded rule-card-icon" style="color: #facc15;">timer</span>
-                  <div>
-                    <div class="rule-card-title">1. Tolerancia Semanal</div>
-                    <div class="rule-card-desc">Máximo 2 días por semana con tolerancia de tardanza de 10 min.</div>
-                  </div>
-                </div>
-                <div class="rule-card">
-                  <span class="material-symbols-rounded rule-card-icon" style="color: #f87171;">gavel</span>
-                  <div>
-                    <div class="rule-card-title">2. Baja Automática</div>
-                    <div class="rule-card-desc">3 días laborables de faltas consecutivas injustificadas.</div>
-                  </div>
-                </div>
-                <div class="rule-card">
-                  <span class="material-symbols-rounded rule-card-icon" style="color: #fb923c;">block</span>
-                  <div>
-                    <div class="rule-card-title">3. Retiro del Mes</div>
-                    <div class="rule-card-desc">5 faltas en el mes o 3 faltas acumuladas por tardanzas (9 tardanzas).</div>
-                  </div>
-                </div>
-                <div class="rule-card">
-                  <span class="material-symbols-rounded rule-card-icon" style="color: #c084fc;">event_busy</span>
-                  <div>
-                    <div class="rule-card-title">4. Retiro Semestral</div>
-                    <div class="rule-card-desc">15 faltas acumuladas durante los últimos 6 meses.</div>
-                  </div>
-                </div>
-                <div class="rule-card">
-                  <span class="material-symbols-rounded rule-card-icon" style="color: #38bdf8;">calculate</span>
-                  <div>
-                    <div class="rule-card-title">5. Tardanzas Aleatorias</div>
-                    <div class="rule-card-desc">3 tardanzas aleatorias durante el mes equivalen a 1 Falta.</div>
-                  </div>
-                </div>
+              <div class="metric-value-container">
+                <span class="metric-value" id="val-stat-baja" style="color: #ef4444;">0</span>
               </div>
             </div>
 
-            <!-- Barra de Filtros Avanzada: Fecha y Agente -->
-            <div class="card-inner" style="margin-bottom: 20px; padding: 16px;">
-              <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
-                
-                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
-                  <!-- Filtro por Agente -->
-                  <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">Agente / Colaborador</label>
-                    <select id="val-select-employee" class="gerencial-select" style="min-width: 200px; padding: 7px 12px; font-size: 0.85rem;">
-                      <option value="all" selected>Todos los Agentes</option>
-                    </select>
-                  </div>
-
-                  <!-- Filtro Tipo de Horario -->
-                  <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">Tipo de Horario</label>
-                    <select id="val-select-schedule-type" class="gerencial-select" style="min-width: 150px; padding: 7px 12px; font-size: 0.85rem;">
-                      <option value="all" selected>Todos los Horarios</option>
-                      <option value="fixed">Con Horario Fijo</option>
-                      <option value="flexible">Horario Flexible</option>
-                    </select>
-                  </div>
-
-                  <!-- Filtro Fecha Inicio -->
-                  <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">Fecha Desde</label>
-                    <input type="date" id="val-input-start-date" class="gerencial-select" style="padding: 6px 10px; font-size: 0.85rem;">
-                  </div>
-
-                  <!-- Filtro Fecha Fin -->
-                  <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">Fecha Hasta</label>
-                    <input type="date" id="val-input-end-date" class="gerencial-select" style="padding: 6px 10px; font-size: 0.85rem;">
-                  </div>
-
-                  <!-- Botones Rápido de Rangos -->
-                  <div style="display: flex; gap: 6px; align-self: flex-end; margin-bottom: 2px;">
-                    <button type="button" id="btn-val-quick-month" class="btn-outline" style="padding: 6px 10px; font-size: 0.75rem;">Este Mes</button>
-                    <button type="button" id="btn-val-quick-6m" class="btn-outline" style="padding: 6px 10px; font-size: 0.75rem;">Últimos 6 Meses</button>
-                  </div>
-                </div>
-
-                <!-- Estado y Exportar -->
-                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; align-self: flex-end;">
-                  <!-- Selector de Estado -->
-                  <select id="val-select-status" class="gerencial-select" style="padding: 7px 12px; font-size: 0.85rem;">
-                    <option value="all" selected>Todos los Estados</option>
-                    <option value="baja">🚨 Baja Automática (3+ Consecutivas)</option>
-                    <option value="retiro">⛔ Causal de Retiro (5+ Mes / 15+ 6M)</option>
-                    <option value="warning">⚠️ Exceso de Tolerancia Semanal</option>
-                    <option value="ok">✅ En Regla (Cumple Políticas)</option>
-                  </select>
-
-                  <!-- Botón Exportar Excel -->
-                  <button id="btn-export-validations" class="btn-primary" style="padding: 7px 14px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-rounded" style="font-size: 18px;">download</span>
-                    <span>Exportar</span>
-                  </button>
-                </div>
-
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Causal de Retiro</span>
+                <span class="material-symbols-rounded metric-icon" style="color: #dc2626;">cancel</span>
+              </div>
+              <div class="metric-value-container">
+                <span class="metric-value" id="val-stat-retiro" style="color: #dc2626;">0</span>
               </div>
             </div>
 
-            <!-- Tabla de Diagnóstico -->
-            <div class="card-inner">
-              <div class="inner-header" style="margin-bottom: 15px;">
-                <div>
-                  <h3>Diagnóstico e Auditoría de Sanciones</h3>
-                  <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Evaluación automática de faltas, tardanzas y causales de retiro según el período y agente seleccionado</p>
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Exceso Tolerancia</span>
+                <span class="material-symbols-rounded metric-icon" style="color: #f59e0b;">schedule</span>
+              </div>
+              <div class="metric-value-container">
+                <span class="metric-value" id="val-stat-exceso" style="color: #f59e0b;">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel de Filtros -->
+          <div class="card-inner" style="margin-bottom: 24px;">
+            <div class="filters-panel" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+              <div class="filter-group" style="flex: 1; min-width: 180px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Buscar Agente / DNI</label>
+                <div class="search-input-wrapper">
+                  <span class="material-symbols-rounded search-icon">search</span>
+                  <input type="text" id="val-input-search" class="form-input" placeholder="Nombre, DNI o Cargo...">
                 </div>
               </div>
 
-              <div class="table-responsive">
-                <table class="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Colaborador</th>
-                      <th>DNI</th>
-                      <th style="text-align: center;">Tardanzas Semanales</th>
-                      <th style="text-align: center;">Tardanzas Mes (Faltas 3:1)</th>
-                      <th style="text-align: center;">Faltas (Mes / 6M)</th>
-                      <th style="text-align: center;">Máx. Consecutivas</th>
-                      <th style="text-align: center;">Estado de Sanción</th>
-                      <th style="text-align: center;">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody id="admin-validations-table-body">
-                    <!-- Dinámico -->
-                  </tbody>
-                </table>
+              <div class="filter-group" style="min-width: 160px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Dictamen / Sanción</label>
+                <select id="val-select-status" class="form-select">
+                  <option value="all">Todos los Estados</option>
+                  <option value="Baja Automática">🚨 Baja Automática (Regla 2)</option>
+                  <option value="Causal de Retiro">⛔ Causal de Retiro (Regla 3/4)</option>
+                  <option value="Exceso Tolerancia">⚠️ Exceso Tolerancia (Regla 1)</option>
+                  <option value="En Regla">✅ En Regla</option>
+                </select>
               </div>
 
-            </div>
+              <div class="filter-group" style="min-width: 160px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Agente Específico</label>
+                <select id="val-select-employee" class="form-select">
+                  <option value="all">Todos los Agentes</option>
+                </select>
+              </div>
 
+              <div class="filter-group" style="min-width: 140px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Tipo Horario</label>
+                <select id="val-select-schedule-type" class="form-select">
+                  <option value="all">Todos los Horarios</option>
+                  <option value="fijo">Horario Fijo</option>
+                  <option value="flexible">Horario Flexible</option>
+                </select>
+              </div>
+
+              <div class="filter-group" style="min-width: 130px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Fecha Inicio</label>
+                <input type="date" id="val-input-start-date" class="form-input">
+              </div>
+
+              <div class="filter-group" style="min-width: 130px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Fecha Fin</label>
+                <input type="date" id="val-input-end-date" class="form-input">
+              </div>
+
+              <div class="filter-group" style="display: flex; gap: 8px;">
+                <button type="button" id="btn-val-quick-month" class="btn-outline" style="padding: 8px 12px; font-size: 0.8rem;">Mes Actual</button>
+                <button type="button" id="btn-val-quick-6m" class="btn-outline" style="padding: 8px 12px; font-size: 0.8rem;">6 Meses</button>
+                <button type="button" id="btn-export-validations" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-rounded">download</span>
+                  <span>Exportar Excel</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla de Resultados -->
+          <div class="card-inner">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Colaborador</th>
+                    <th>DNI</th>
+                    <th>Tipo Horario</th>
+                    <th>Dictamen Oficial</th>
+                    <th>Causa Principal</th>
+                    <th>Tardanzas (Rango)</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="val-table-body">
+                  <!-- Se llena dinámicamente -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -1923,67 +1865,6 @@
       </div>
     </div>
 
-    <!-- MODAL DETALLE DE AUDITORÍA Y SANCIONES -->
-    <div id="modal-validation-details" class="modal-overlay hidden" style="display: none; z-index: 10000;">
-      <div class="modal card glassmorphism animate-scale-up" style="max-width: 820px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; padding: 24px;">
-        <!-- Cabecera de Colaborador -->
-        <div class="card-header" style="margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center;">
-              <span class="material-symbols-rounded" style="font-size: 26px; color: #818cf8;">badge</span>
-            </div>
-            <div>
-              <h3 id="val-modal-emp-name" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em;">Detalle de Auditoría</h3>
-              <p id="val-modal-emp-info" style="margin: 3px 0 0 0; font-size: 0.82rem; color: var(--text-secondary);">DNI: --- | Cargo: ---</p>
-            </div>
-          </div>
-          <div id="val-modal-emp-badge"></div>
-        </div>
-
-        <div style="overflow-y: auto; flex: 1; padding-right: 4px;">
-          <!-- Resumen de Indicadores KPI del Colaborador -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 10px; margin-bottom: 16px;">
-            <div class="val-modal-kpi-card" style="background: var(--surface-1); border: 1px solid var(--border-color); padding: 12px 10px; border-radius: var(--radius-md); text-align: center;">
-              <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Tardanzas Sem.</div>
-              <div id="val-modal-stat-tardy-week" class="val-modal-stat-yellow" style="font-size: 1.35rem; font-weight: 800; color: #facc15;">0</div>
-            </div>
-            <div class="val-modal-kpi-card" style="background: var(--surface-1); border: 1px solid var(--border-color); padding: 12px 10px; border-radius: var(--radius-md); text-align: center;">
-              <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Faltas 3:1 Mes</div>
-              <div id="val-modal-stat-converted" class="val-modal-stat-cyan" style="font-size: 1.35rem; font-weight: 800; color: #38bdf8;">0</div>
-            </div>
-            <div class="val-modal-kpi-card" style="background: var(--surface-1); border: 1px solid var(--border-color); padding: 12px 10px; border-radius: var(--radius-md); text-align: center;">
-              <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Faltas Mes</div>
-              <div id="val-modal-stat-absent-month" class="val-modal-stat-orange" style="font-size: 1.35rem; font-weight: 800; color: #fb923c;">0</div>
-            </div>
-            <div class="val-modal-kpi-card" style="background: var(--surface-1); border: 1px solid var(--border-color); padding: 12px 10px; border-radius: var(--radius-md); text-align: center;">
-              <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Faltas 6 Meses</div>
-              <div id="val-modal-stat-absent-6m" class="val-modal-stat-purple" style="font-size: 1.35rem; font-weight: 800; color: #c084fc;">0</div>
-            </div>
-            <div class="val-modal-kpi-card" style="background: var(--surface-1); border: 1px solid var(--border-color); padding: 12px 10px; border-radius: var(--radius-md); text-align: center;">
-              <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 4px;">Máx. Consecutivas</div>
-              <div id="val-modal-stat-consecutive" class="val-modal-stat-red" style="font-size: 1.35rem; font-weight: 800; color: #f87171;">0</div>
-            </div>
-          </div>
-
-          <h4 style="font-size: 0.92rem; font-weight: 800; margin-bottom: 10px; color: var(--text-primary); letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-rounded text-gradient color-blue" style="font-size: 20px;">analytics</span>
-            Desglose de Auditoría e Infracciones Registradas
-          </h4>
-
-          <div id="val-modal-breakdown-list" style="display: flex; flex-direction: column; gap: 8px;">
-            <!-- Carga dinámica -->
-          </div>
-        </div>
-
-        <div style="margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
-          <button type="button" id="btn-val-modal-close" class="btn-primary" style="padding: 9px 24px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-rounded" style="font-size: 18px;">close</span>
-            Cerrar Auditoría
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- NOTIFICATION HINTS / TOASTS -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -1992,11 +1873,82 @@
     </footer>
   </div>
 
+  <!-- MODAL DE AUDITORÍA Y DETALLE DE VALIDACIONES -->
+  <div id="modal-validation-details" class="modal-overlay hidden">
+    <div class="modal-container val-audit-modal" style="max-width: 820px; width: 95%;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="material-symbols-rounded" style="color: #6366f1; font-size: 28px;">gavel</span>
+          <div>
+            <h3 id="val-modal-emp-name" style="margin: 0; font-size: 1.25rem;">Nombre Colaborador</h3>
+            <span style="font-size: 0.85rem; color: #94a3b8;">DNI: <strong id="val-modal-emp-dni">---</strong> | Cargo: <span id="val-modal-emp-role">---</span></span>
+          </div>
+        </div>
+        <button type="button" id="btn-val-modal-close" class="btn-close-modal" style="background: none; border: none; color: #94a3b8; cursor: pointer;">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px;">
+        <!-- Banner de Dictamen Oficial -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: rgba(30, 41, 59, 0.6); border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;" class="val-audit-card">
+          <span style="font-weight: 600; font-size: 0.95rem;">Dictamen de Control Interno:</span>
+          <span id="val-modal-status-badge" class="val-badge val-status-ok">✅ En Regla</span>
+        </div>
+
+        <!-- Banners de Alerta de Sanciones -->
+        <div id="val-modal-alert-container"></div>
+
+        <!-- Métricas Rápidas del Agente -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px;">
+          <div style="padding: 12px; background: rgba(30, 41, 59, 0.4); border-radius: 10px; text-align: center; border: 1px solid var(--border-color);" class="val-modal-kpi-card">
+            <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">Tardanzas Sem.</span>
+            <strong id="val-modal-stat-tardiness" style="font-size: 1.2rem;" class="val-text-amber">0</strong>
+          </div>
+          <div style="padding: 12px; background: rgba(30, 41, 59, 0.4); border-radius: 10px; text-align: center; border: 1px solid var(--border-color);" class="val-modal-kpi-card">
+            <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">Faltas 3:1 Mes</span>
+            <strong id="val-modal-stat-converted" style="font-size: 1.2rem; color: #f97316;">0</strong>
+          </div>
+          <div style="padding: 12px; background: rgba(30, 41, 59, 0.4); border-radius: 10px; text-align: center; border: 1px solid var(--border-color);" class="val-modal-kpi-card">
+            <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">Faltas Mes</span>
+            <strong id="val-modal-stat-month-faltas" style="font-size: 1.2rem; color: #ef4444;">0</strong>
+          </div>
+          <div style="padding: 12px; background: rgba(30, 41, 59, 0.4); border-radius: 10px; text-align: center; border: 1px solid var(--border-color);" class="val-modal-kpi-card">
+            <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">Faltas 6 Meses</span>
+            <strong id="val-modal-stat-total-faltas" style="font-size: 1.2rem; color: #dc2626;">0</strong>
+          </div>
+          <div style="padding: 12px; background: rgba(30, 41, 59, 0.4); border-radius: 10px; text-align: center; border: 1px solid var(--border-color);" class="val-modal-kpi-card">
+            <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px;">Máx. Consecutivas</span>
+            <strong id="val-modal-stat-consecutive" style="font-size: 1.2rem; color: #a855f7;">0</strong>
+          </div>
+        </div>
+
+        <!-- Tabla de Detalle de Tardanzas Auditadas -->
+        <h4 style="margin: 0 0 12px 0; font-size: 0.95rem; font-weight: 600;">Desglose de Tardanzas e Incidencias</h4>
+        <div style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+          <table class="data-table val-audit-table" style="width: 100%; font-size: 0.85rem;">
+            <thead>
+              <tr style="position: sticky; top: 0; background: #1e293b; z-index: 10;">
+                <th>Fecha</th>
+                <th>Marcación / Horario</th>
+                <th>Retraso</th>
+                <th>Dictamen de Regla</th>
+              </tr>
+            </thead>
+            <tbody id="val-modal-tardiness-tbody">
+              <!-- Se llena dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bibliotecas externas -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <!-- Script Principal de la Aplicación -->
-  <script src="app.js?v=20260724_21"></script>
+  <script src="app.js?v=20260724_22"></script>
 </body>
 </html>
