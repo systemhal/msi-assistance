@@ -7268,13 +7268,16 @@ function isRestrictedMobileRole(role) {
   const roleLower = String(role || '').toLowerCase().trim();
   if (!roleLower) return true;
 
-  // Cargos autorizados explícitamente en móviles (Administración, Supervisión, Jefatura, Gerencia)
+  // Cargos autorizados explícitamente en móviles (Administración, Supervisión, Jefatura, Gerencia, Dirección, Coordinación, Liderazgo)
   const isAuthorizedAdminRole = roleLower.includes('admin') || 
-                                roleLower.includes('supervisor') || 
-                                roleLower.includes('jefe') || 
-                                roleLower.includes('gerent') || 
-                                roleLower.includes('director') || 
-                                roleLower.includes('encargado');
+                                roleLower.includes('supervis') || 
+                                roleLower.includes('jef') || 
+                                roleLower.includes('geren') || 
+                                roleLower.includes('direct') || 
+                                roleLower.includes('coordinad') ||
+                                roleLower.includes('lider') ||
+                                roleLower.includes('líder') ||
+                                roleLower.includes('encargad');
 
   if (isAuthorizedAdminRole) {
     return false; // NO restringido -> PERMITIDO en móvil
