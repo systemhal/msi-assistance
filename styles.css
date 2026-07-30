@@ -1193,7 +1193,7 @@ input::-webkit-calendar-picker-indicator:hover {
 
 /* Responsive Media Queries for Admin Sidebar & Full Dashboard */
 @media (max-width: 992px) {
-  #view-admin.admin-layout-sidebar {
+  #view-admin.admin-layout-sidebar:not(.hidden) {
     grid-template-columns: 1fr !important;
     position: fixed !important;
     top: 0 !important;
@@ -1207,6 +1207,9 @@ input::-webkit-calendar-picker-indicator:hover {
   }
 
   .admin-sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 950 !important;
     height: auto !important;
     max-height: none !important;
     border-right: none !important;
@@ -1214,10 +1217,14 @@ input::-webkit-calendar-picker-indicator:hover {
     padding: 12px 14px !important;
     gap: 10px !important;
     flex-shrink: 0 !important;
+    background: var(--bg-secondary) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
   }
 
   .admin-sidebar-brand {
-    padding-bottom: 10px !important;
+    padding-bottom: 8px !important;
   }
 
   .admin-sidebar-nav-container {
@@ -1237,7 +1244,7 @@ input::-webkit-calendar-picker-indicator:hover {
     overflow-x: auto !important;
     white-space: nowrap !important;
     gap: 8px !important;
-    padding-bottom: 4px !important;
+    padding: 4px 2px 6px 2px !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
   }
@@ -1252,6 +1259,7 @@ input::-webkit-calendar-picker-indicator:hover {
     flex-shrink: 0 !important;
     padding: 8px 14px !important;
     font-size: 0.84rem !important;
+    border-radius: var(--radius-md) !important;
   }
 
   .admin-sidebar-footer {
@@ -1447,14 +1455,30 @@ input::-webkit-calendar-picker-indicator:hover {
   }
 
   .admin-top-bar {
+    display: flex !important;
     flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 12px !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 1px solid var(--border-color) !important;
   }
 
   .admin-top-actions {
+    display: grid !important;
+    grid-template-columns: auto 1fr 1fr !important;
+    gap: 8px !important;
     width: 100% !important;
-    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .admin-top-actions .btn-top-sync,
+  .admin-top-actions .btn-top-close {
+    width: 100% !important;
+    justify-content: center !important;
+    font-size: 0.8rem !important;
+    padding: 0 10px !important;
+    height: 38px !important;
   }
 
   .table-responsive,
