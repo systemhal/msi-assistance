@@ -7247,6 +7247,7 @@ function openAgentHistoryModal(isCurrentMonth = true) {
 // ==========================================
 let securityBlockMobile = false;
 let securityRestrictPcs = false;
+let securityRestrictMobiles = false;
 
 function isMobileDevice() {
   const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
@@ -7295,9 +7296,51 @@ function lockBodyForSecurity(lock) {
 function loadSecuritySettings() {
   securityBlockMobile = localStorage.getItem('security_block_mobile') === 'true';
   securityRestrictPcs = localStorage.getItem('security_restrict_pcs') === 'true';
+  securityRestrictMobiles = localStorage.getItem('security_restrict_mobiles') === 'true';
   
   const chkMobile = document.getElementById('chk-block-mobile');
   const chkPcs = document.getElementById('chk-restrict-pcs');
+  const chkRestrictMobiles = document.getElementById('chk-restrict-mobiles');
+
+  if (chkRestrictMobiles) {
+    chkRestrictMobiles.checked = securityRestrictMobiles;
+    if (!chkRestrictMobiles.dataset.bound) {
+      chkRestrictMobiles.dataset.bound = "true";
+      chkRestrictMobiles.addEventListener('change', () => {
+        securityRestrictMobiles = chkRestrictMobiles.checked;
+        safeSetItem('security_restrict_mobiles', securityRestrictMobiles);
+        if (securityRestrictMobiles && isMobileDevice()) {
+          safeSetItem('asistencia_mobile_auth_token', ADMIN_PASSWORD_HASH);
+        }
+
+        if (googleScriptUrl) {
+          fetch(getScriptUrlWithApiKey(), {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'Guardar_Configuracion',
+              apiKey: googleScriptApiKey,
+              security_block_mobile: securityBlockMobile,
+              security_restrict_pcs: securityRestrictPcs,
+              security_restrict_mobiles: securityRestrictMobiles,
+              tardiness_tolerance: tardinessTolerance,
+              api_key: googleScriptApiKey
+            })
+          }).catch(err => console.error('Error sincronizando restricción de celulares:', err));
+        }
+
+        showToast(
+          securityRestrictMobiles ? 'warning' : 'info',
+          securityRestrictMobiles ? 'Restricción de Celulares Activada 🔒' : 'Restricción de Celulares Desactivada 🔓',
+          securityRestrictMobiles ? 'Solo los celulares autorizados por el admin podrán acceder al sistema.' : 'Cualquier celular puede ingresar (según reglas de cargo DNI).'
+        );
+
+        validateDeviceSecurity();
+      });
+    }
+  }
+
   if (chkMobile) {
     chkMobile.checked = securityBlockMobile;
     if (!chkMobile.dataset.bound) {
@@ -7316,6 +7359,7 @@ function loadSecuritySettings() {
               apiKey: googleScriptApiKey,
               security_block_mobile: securityBlockMobile,
               security_restrict_pcs: securityRestrictPcs,
+              security_restrict_mobiles: securityRestrictMobiles,
               tardiness_tolerance: tardinessTolerance,
               api_key: googleScriptApiKey
             })
@@ -7355,6 +7399,7 @@ function loadSecuritySettings() {
               apiKey: googleScriptApiKey,
               security_block_mobile: securityBlockMobile,
               security_restrict_pcs: securityRestrictPcs,
+              security_restrict_mobiles: securityRestrictMobiles,
               tardiness_tolerance: tardinessTolerance,
               api_key: googleScriptApiKey
             })
@@ -7385,6 +7430,30 @@ function validateDeviceSecurity() {
   
   if (!blockScreen) return false;
 
+  // Case 0: Restricción de Celulares Autorizados por Token
+  if (securityRestrictMobiles && isMobileDevice()) {
+    const validMobileToken = ADMIN_PASSWORD_HASH;
+    const storedMobileToken = localStorage.getItem('asistencia_mobile_auth_token');
+    if (storedMobileToken !== validMobileToken) {
+      blockTitle.textContent = "Celular No Autorizado 📱";
+      blockMessage.innerHTML = "📱 Este teléfono móvil <strong>no cuenta con autorización</strong> para ingresar al sistema.<br><br>Pídale al administrador que autorice este celular ingresando la contraseña de administrador.";
+      blockIcon.textContent = "phonelink_lock";
+      if (blockIconContainer) {
+        blockIconContainer.style.borderColor = "#f59e0b";
+        blockIconContainer.style.background = "rgba(245, 158, 11, 0.1)";
+      }
+      blockIcon.style.color = "#f59e0b";
+      if (btnShowAuth) {
+        btnShowAuth.style.display = "inline-flex";
+        btnShowAuth.querySelector('span:first-child').textContent = "Autorizar este Celular";
+      }
+      blockScreen.classList.remove('hidden');
+      blockScreen.style.display = "flex";
+      lockBodyForSecurity(true);
+      return true;
+    }
+  }
+
   // Case 1: Bloqueo de Móviles y Tablets por Cargo Oficial
   // Solo se bloquea si hay una sesión activa de un cargo restringido (ej. Colaborador / Ventas)
   if (securityBlockMobile && isMobileDevice() && currentSession && currentSession.role) {
@@ -7407,7 +7476,7 @@ function validateDeviceSecurity() {
   }
 
   // Case 2: Restricción de PCs autorizadas
-  if (securityRestrictPcs) {
+  if (securityRestrictPcs && !isMobileDevice()) {
     // El token válido es el hash de la contraseña de admin
     const validToken = ADMIN_PASSWORD_HASH;
     const storedToken = localStorage.getItem('asistencia_pc_auth_token');
@@ -7420,7 +7489,10 @@ function validateDeviceSecurity() {
         blockIconContainer.style.background = "rgba(245, 158, 11, 0.1)";
       }
       blockIcon.style.color = "#f59e0b";
-      if (btnShowAuth) btnShowAuth.style.display = "inline-flex";
+      if (btnShowAuth) {
+        btnShowAuth.style.display = "inline-flex";
+        btnShowAuth.querySelector('span:first-child').textContent = "Autorizar esta Computadora";
+      }
       blockScreen.classList.remove('hidden');
       blockScreen.style.display = "flex";
       lockBodyForSecurity(true);
@@ -7444,7 +7516,9 @@ function setupDeviceSecurityUIListeners() {
   const errMsg = document.getElementById('security-admin-error-msg');
   
   const btnAuthorizePC = document.getElementById('btn-authorize-pc');
+  const btnAuthorizeMobile = document.getElementById('btn-authorize-mobile');
   const btnRevokePCs = document.getElementById('btn-revoke-pcs');
+  const btnRevokeMobiles = document.getElementById('btn-revoke-mobiles');
   
   if (btnShowAuth && authFormContainer) {
     btnShowAuth.addEventListener('click', () => {
@@ -7481,8 +7555,13 @@ function setupDeviceSecurityUIListeners() {
       const pass = inputPass.value;
       if (generateAuthToken(pass) === ADMIN_PASSWORD_HASH) {
         const token = ADMIN_PASSWORD_HASH;
-        safeSetItem('asistencia_pc_auth_token', token);
-        showToast('success', 'Dispositivo Autorizado ✅', 'Esta computadora ahora está autorizada para registrar asistencia.');
+        if (isMobileDevice()) {
+          safeSetItem('asistencia_mobile_auth_token', token);
+          showToast('success', 'Celular Autorizado ✅', 'Este dispositivo móvil ahora está autorizado para ingresar.');
+        } else {
+          safeSetItem('asistencia_pc_auth_token', token);
+          showToast('success', 'Dispositivo Autorizado ✅', 'Esta computadora ahora está autorizada para registrar asistencia.');
+        }
         if (errMsg) {
           errMsg.style.display = 'none';
           errMsg.classList.add('hidden');
@@ -7511,18 +7590,42 @@ function setupDeviceSecurityUIListeners() {
       showToast('success', 'Computadora Autorizada ✅', 'Este navegador ha sido autorizado manualmente.');
     });
   }
+
+  if (btnAuthorizeMobile) {
+    btnAuthorizeMobile.addEventListener('click', () => {
+      const token = ADMIN_PASSWORD_HASH;
+      safeSetItem('asistencia_mobile_auth_token', token);
+      showToast('success', 'Celular Autorizado ✅', 'Este celular ha sido autorizado manualmente.');
+    });
+  }
   
   if (btnRevokePCs) {
     btnRevokePCs.addEventListener('click', async () => {
       const confirm = await showCustomConfirm({
-        title: 'Revocar Accesos',
-        message: '⚠️ ¿Estás seguro de que deseas desautorizar todas las computadoras?<br><br>Esta acción revocará la autorización de todos los dispositivos y deberás ingresar la contraseña en cada PC de nuevo.',
+        title: 'Revocar Accesos de PCs',
+        message: '⚠️ ¿Estás seguro de que deseas desautorizar todas las computadoras?<br><br>Esta acción revocará la autorización de todos los navegadores PC.',
         type: 'danger',
-        acceptText: 'Desautorizar'
+        acceptText: 'Desautorizar PCs'
       });
       if (confirm) {
         localStorage.removeItem('asistencia_pc_auth_token');
-        showToast('success', 'Accesos Revocados', 'Todos los accesos locales de PC han sido removidos.');
+        showToast('success', 'Accesos de PC Revocados', 'Todos los accesos locales de PC han sido removidos.');
+        validateDeviceSecurity();
+      }
+    });
+  }
+
+  if (btnRevokeMobiles) {
+    btnRevokeMobiles.addEventListener('click', async () => {
+      const confirm = await showCustomConfirm({
+        title: 'Revocar Celulares Autorizados',
+        message: '⚠️ ¿Estás seguro de que deseas desautorizar todos los celulares?<br><br>Esta acción revocará el permiso de todos los dispositivos móviles y deberás volver a ingresar la contraseña de admin en cada teléfono.',
+        type: 'danger',
+        acceptText: 'Desautorizar Celulares'
+      });
+      if (confirm) {
+        localStorage.removeItem('asistencia_mobile_auth_token');
+        showToast('success', 'Celulares Desautorizados', 'Todos los permisos locales de teléfonos móviles han sido revocados.');
         validateDeviceSecurity();
       }
     });

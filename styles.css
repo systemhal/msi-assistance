@@ -791,15 +791,22 @@ input::-webkit-calendar-picker-indicator:hover {
   text-align: left; 
 }
 
-.admin-table th {
-  padding: 13px 12px;
+.admin-table th,
+.data-table th,
+.report-table th,
+.table-responsive table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 15 !important;
+  padding: 12px 12px;
   background: #1e293b !important; /* Encabezado de color definido Azul Marino Slate */
   color: #ffffff !important;        /* Texto de cabecera blanco nítido */
   font-weight: 700;
   font-size: 0.77rem;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  border-bottom: 2px solid #0f172a;
+  border-bottom: 2px solid #0f172a !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
 }
 
 .admin-table th:first-child {
@@ -1184,27 +1191,82 @@ input::-webkit-calendar-picker-indicator:hover {
   box-shadow: 0 0 12px var(--primary-glow);
 }
 
-/* Responsive Media Queries for Admin Sidebar */
+/* Responsive Media Queries for Admin Sidebar & Full Dashboard */
 @media (max-width: 992px) {
   #view-admin.admin-layout-sidebar {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
   .admin-sidebar {
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-    padding: 18px;
+    height: auto !important;
+    max-height: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 12px 14px !important;
+    gap: 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .admin-sidebar-brand {
+    padding-bottom: 10px !important;
+  }
+
+  .admin-sidebar-nav-container {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+  }
+
+  .sidebar-nav-title {
+    display: none !important;
   }
 
   .admin-tabs-nav.vertical {
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 6px;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    gap: 8px !important;
+    padding-bottom: 4px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .admin-tabs-nav.vertical::-webkit-scrollbar {
+    display: none !important;
   }
 
   .admin-tabs-nav.vertical .btn-admin-tab {
-    white-space: nowrap;
-    width: auto;
+    white-space: nowrap !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    font-size: 0.84rem !important;
+  }
+
+  .admin-sidebar-footer {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    padding-top: 8px !important;
+  }
+
+  .admin-main-content {
+    height: auto !important;
+    overflow-y: visible !important;
+    padding: 16px 12px !important;
+    flex-grow: 1 !important;
+    min-width: 0 !important;
   }
 }
 
@@ -1348,7 +1410,7 @@ input::-webkit-calendar-picker-indicator:hover {
   }
 }
 
-@media (max-width:500px) {
+@media (max-width: 640px) {
   .app-container { padding: 10px; }
   .card          { padding: 18px 13px; }
   .dashboard-user-bar { flex-direction:column; align-items:flex-start; }
@@ -1356,6 +1418,53 @@ input::-webkit-calendar-picker-indicator:hover {
   .break-actions-row { grid-template-columns: 1fr; }
   .clock-display { font-size: 2.6rem; }
   .admin-stats-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Full responsive mobile filter bars & control alignment */
+  .report-filter-bar,
+  .consolidated-filter-bar,
+  .monthly-filter-bar,
+  .daily-filter-bar,
+  .quick-filters-group {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .report-filter-bar .input-group,
+  .consolidated-filter-bar .input-group,
+  .monthly-filter-bar .input-group,
+  .daily-filter-bar .input-group,
+  .report-filter-bar select,
+  .report-filter-bar input,
+  .consolidated-filter-bar select,
+  .consolidated-filter-bar input,
+  .report-filter-bar button,
+  .consolidated-filter-bar button {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-top-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .admin-top-actions {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .table-responsive,
+  .report-scroll-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+  }
 }
 
 /* ── ALERTAS Y TARDANZAS ──────────────────────────────────── */
@@ -2678,25 +2787,37 @@ body.light-theme .val-single-line-bar .gerencial-input {
   border-collapse: separate !important;
   border-spacing: 0 !important;
   border-radius: 12px !important;
-  overflow: hidden !important;
 }
 
+/* Container de Scroll Estático para Tabla de Validaciones */
+#tab-validations-content .report-scroll-container {
+  max-height: 480px !important;
+  overflow-y: auto !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
+}
+
+/* 3. Encabezado Azul Marino Slate Idéntico a Reportes por Agente, Estático y Fijado al Desplazar */
 .val-table-header-center th {
-  background: rgba(30, 41, 59, 0.95) !important;
-  color: #cbd5e1 !important;
-  font-size: 0.8rem !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 15 !important;
+  background: #1e293b !important;
+  color: #ffffff !important;
+  font-size: 0.78rem !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  padding: 14px 16px !important;
-  border-bottom: 2px solid rgba(99, 102, 241, 0.4) !important;
+  letter-spacing: 0.6px !important;
+  padding: 11px 14px !important;
+  border-bottom: 2px solid #0f172a !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 [data-theme="light"] .val-table-header-center th,
 body.light-theme .val-table-header-center th {
-  background: #f8fafc !important;
-  color: #334155 !important;
-  border-bottom: 2px solid #6366f1 !important;
+  background: #1e293b !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid #0f172a !important;
 }
 
 .val-table-body-center tr {
@@ -2712,14 +2833,34 @@ body.light-theme .val-table-body-center tr:hover {
   background: #f1f5f9 !important;
 }
 
+/* Alto Equilibrado de Filas y Tamaño Contenido Ajustado */
 .val-table-body-center td {
-  padding: 14px 16px !important;
+  padding: 9px 14px !important;
+  font-size: 0.8rem !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
 [data-theme="light"] .val-table-body-center td,
 body.light-theme .val-table-body-center td {
   border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Reducción Balanceada de Badges para Faltas y Tardanzas */
+#tab-validations-content .val-tardiness-badge,
+#tab-validations-content .val-faltas-badge {
+  padding: 4px 11px !important;
+  font-size: 0.78rem !important;
+  border-radius: 14px !important;
+}
+
+#tab-validations-content .val-badge {
+  padding: 4px 10px !important;
+  font-size: 0.78rem !important;
+}
+
+#tab-validations-content .btn-admin-edit {
+  padding: 5px 12px !important;
+  font-size: 0.78rem !important;
 }
 
 /* Botón Ver Auditoría Estilizado */

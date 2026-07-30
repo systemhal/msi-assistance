@@ -1200,7 +1200,7 @@
             </div>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px;">
               <div style="display: flex; flex-direction: column; gap: 12px; background: var(--bg-inner); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-                <h4 style="margin: 0 0 6px 0; font-family: var(--font-display); color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+                <h4 style="margin: 0 0 6px 0; font-family: var(--font-display); color: var(--color-error); display: flex; align-items: center; gap: 6px;">
                   <span class="material-symbols-rounded" style="color: var(--color-error);">smartphone</span>
                   Bloqueo de Dispositivos Móviles
                 </h4>
@@ -1209,7 +1209,21 @@
                   Bloquear marcaciones desde Celulares y Tablets
                 </label>
                 <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
-                  Al activarse, cualquier intento de abrir la página o marcar asistencia desde un celular o tablet mostrará un bloqueo de pantalla inmediato.
+                  Al activarse, el sistema verifica el cargo oficial del DNI. Cargos operativos (Colaborador/Ventas) no podrán ingresar desde dispositivos móviles.
+                </p>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px; background: var(--bg-inner); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                <h4 style="margin: 0 0 6px 0; font-family: var(--font-display); color: #f59e0b; display: flex; align-items: center; gap: 6px;">
+                  <span class="material-symbols-rounded">phonelink_lock</span>
+                  Restringir a Celulares Autorizados
+                </h4>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-secondary); font-size: 0.95rem;">
+                  <input type="checkbox" id="chk-restrict-mobiles" style="width: 18px; height: 18px; cursor: pointer;">
+                  Permitir solo a Celulares Autorizados por el Admin
+                </label>
+                <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
+                  Solo los teléfonos que el Administrador autorice con la contraseña maestra podrán acceder al sistema, bloqueando celulares personales no registrados.
                 </p>
               </div>
 
@@ -1231,11 +1245,19 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
               <button id="btn-authorize-pc" class="btn-primary w-full" style="background: var(--primary);">
                 <span class="material-symbols-rounded">verified_user</span>
-                <span>Autorizar esta Computadora</span>
+                <span>Autorizar esta PC</span>
+              </button>
+              <button id="btn-authorize-mobile" class="btn-primary w-full" style="background: #f59e0b;">
+                <span class="material-symbols-rounded">phonelink_setup</span>
+                <span>Autorizar este Celular</span>
               </button>
               <button id="btn-revoke-pcs" class="btn-outline w-full" style="color: var(--color-error); border-color: rgba(220, 20, 60, 0.3);">
                 <span class="material-symbols-rounded" style="color: var(--color-error);">gpp_bad</span>
-                <span>Desautorizar todas las Computadoras</span>
+                <span>Desautorizar todas las PCs</span>
+              </button>
+              <button id="btn-revoke-mobiles" class="btn-outline w-full" style="color: var(--color-error); border-color: rgba(220, 20, 60, 0.3);">
+                <span class="material-symbols-rounded" style="color: var(--color-error);">mobile_off</span>
+                <span>Desautorizar todos los Celulares</span>
               </button>
             </div>
           </div>
