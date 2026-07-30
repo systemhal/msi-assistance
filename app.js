@@ -53,7 +53,7 @@ let googleScriptApiKey = "AsistenciaPro_SecuredKey_2026";
 function getScriptUrlWithApiKey(action = '') {
   if (!googleScriptUrl) return '';
   const delimiter = googleScriptUrl.includes('?') ? '&' : '?';
-  let url = `${googleScriptUrl}${delimiter}apiKey=${encodeURIComponent(googleScriptApiKey)}`;
+  let url = `${googleScriptUrl}${delimiter}apiKey=${encodeURIComponent(googleScriptApiKey)}&_cb=${new Date().getTime()}`;
   if (action) {
     url += `&action=${encodeURIComponent(action)}`;
   }
@@ -107,6 +107,47 @@ function findEmployeeByDni(dni) {
     }
   }
   return null;
+}
+
+/**
+ * Evalúa si un colaborador debe mostrarse activo en una fecha objetivo (por defecto hoy).
+ * @param {Object} employee - El objeto del empleado de la BD
+ * @param {String} targetDateStr - Fecha objetivo en formato 'DD/MM/YYYY'. Si se omite, usa hoy.
+ * @returns {Boolean} true si está activo, false si está de baja y la fecha de baja ya pasó o es igual a la objetivo.
+ */
+function isEmployeeActive(employee, targetDateStr = null) {
+  if (!employee) return false;
+  const est = String(employee.estado || 'Activo').trim().toLowerCase();
+  if (est !== 'baja') return true;
+  if (!employee.fechaBaja) return true;
+
+  const targetDate = targetDateStr ? window.parseDayMonthYear(targetDateStr) : new Date();
+  targetDate.setHours(0,0,0,0);
+  
+  let dateStr = String(employee.fechaBaja).trim();
+  if (dateStr.includes('T')) {
+    dateStr = dateStr.split('T')[0];
+  }
+
+  let bajaDate = null;
+  if (dateStr.includes('-')) {
+    const parts = dateStr.split('-');
+    if (parts.length >= 3) {
+      bajaDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+  } else if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      bajaDate = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+    }
+  }
+
+  if (bajaDate && !isNaN(bajaDate.getTime())) {
+    bajaDate.setHours(0,0,0,0);
+    return targetDate < bajaDate;
+  }
+  
+  return true;
 }
 let tardinessTolerance = 5; 
 let cachedAgentHistory = [];
@@ -402,12 +443,29 @@ loginForm.addEventListener('submit', (e) => {
   dniError.classList.add('hidden');
   const employee = employeesDatabase[dni];
   
+  if (!isEmployeeActive(employee)) {
+    showToast('error', 'Acceso Denegado', 'El colaborador se encuentra dado de baja.');
+    return;
+  }
+  
   // Validate Security PIN
   if (employee.pin !== pin) {
     showToast('error', 'PIN incorrecto', 'Por favor ingresa tu código PIN de 4 dígitos válido.');
     return;
   }
   
+  // Validar Bloqueo Móvil por Cargo Oficial del DNI en BD
+  if (securityBlockMobile && isMobileDevice()) {
+    if (isRestrictedMobileRole(employee.role)) {
+      showToast(
+        'error', 
+        'Acceso Móvil Denegado 🚫', 
+        `El DNI ${dni} (${employee.name}) tiene registrado el cargo de "${employee.role || 'Colaborador'}". Su cargo solo tiene permitido registrar asistencia desde la PC fija de la oficina.`
+      );
+      return;
+    }
+  }
+
   // Iniciar Sesión Exitosa
   currentSession = {
     dni: dni,
@@ -645,16 +703,24 @@ function updateDashboardStatusUI(action) {
       btnBreakOut.disabled = true;
       btnSalida.disabled = true;
       
-      // Bloquear ingreso si ya pasó la hora de fin de jornada programada para hoy
+      // Bloquear ingreso si es feriado, día de descanso o si ya pasó la hora de fin de jornada
       if (currentSession && employeesDatabase[currentSession.dni]) {
         const employee = employeesDatabase[currentSession.dni];
         const todayDate = new Date();
+        const normToday = getTodayNormalizedDateStr(todayDate);
+        const partsToday = normToday.split('/');
+        const dayMonthToday = `${partsToday[0].padStart(2, '0')}/${partsToday[1].padStart(2, '0')}`;
+        
+        const isStaticHoliday = GLOBAL_FERIADOS.includes(dayMonthToday);
+        const customHoliday = feriadosDatabase.find(f => normalizeDateStr(f.dateStr) === normToday);
+        const isHoliday = isStaticHoliday || !!customHoliday;
+
         const dayOfWeek = todayDate.getDay(); // 0 = Domingo, 1 = Lunes...
         let todaySched = null;
         if (employee && employee.weeklySchedule) {
           let schedObj = employee.weeklySchedule;
           if (typeof schedObj === 'string' && schedObj.trim() !== '') {
-            try { schedObj = JSON.parse(schedObj); } catch(e) {}
+            try { schedObj = JSON.parse(schedObj); } catch (e) {}
           }
           if (schedObj && schedObj[dayOfWeek]) {
             todaySched = schedObj[dayOfWeek];
@@ -664,8 +730,18 @@ function updateDashboardStatusUI(action) {
           if (dayOfWeek === 0) todaySched = { isRestDay: true };
           else todaySched = { isRestDay: false, workEnd: employee.workEnd || "17:00" };
         }
-        
-        if (todaySched && !todaySched.isRestDay) {
+
+        const isRestDay = !!todaySched.isRestDay;
+
+        if (isHoliday) {
+          btnIngreso.disabled = true;
+          btnIngreso.title = "Hoy es día feriado oficial. No está permitido marcar ingreso.";
+          currentStatusText.textContent = 'Día Feriado Oficial (Sin Marcación)';
+        } else if (isRestDay) {
+          btnIngreso.disabled = true;
+          btnIngreso.title = "Hoy es tu día de descanso programado. No está permitido marcar ingreso.";
+          currentStatusText.textContent = 'Día de Descanso (No Programado)';
+        } else {
           const workEndStr = todaySched.workEnd || "17:00";
           const [endHour, endMin] = workEndStr.split(':').map(Number);
           const endSeconds = (endHour * 3600) + (endMin * 60);
@@ -862,7 +938,7 @@ function sendRegistrationToGoogleSheets(dni, name, age, gender, role, workStart,
 }
 
 // Sincronizar edición de empleado en Google Sheets
-function sendUpdateToGoogleSheets(dni, name, role, workStart, workEnd, breakStart, breakEnd, pin, weeklySchedule = "") {
+function sendUpdateToGoogleSheets(dni, name, role, workStart, workEnd, breakStart, breakEnd, pin, weeklySchedule = "", estado = "Activo", fechaBaja = "") {
   if (!googleScriptUrl) return;
 
   const employee = employeesDatabase[dni] || {};
@@ -885,7 +961,9 @@ function sendUpdateToGoogleSheets(dni, name, role, workStart, workEnd, breakStar
     breakStart: breakStart,
     breakEnd: breakEnd,
     pin: finalPin,
-    weeklySchedule: typeof weeklySchedule === 'object' ? JSON.stringify(weeklySchedule) : weeklySchedule
+    weeklySchedule: typeof weeklySchedule === 'object' ? JSON.stringify(weeklySchedule) : weeklySchedule,
+    estado: estado,
+    fechaBaja: fechaBaja
   };
   
   fetch(getScriptUrlWithApiKey(), {
@@ -942,7 +1020,9 @@ function syncEmployeesFromGoogleSheets() {
             workEnd: emp.workEnd || "17:00",
             breakStart: emp.breakStart || "13:00",
             breakEnd: emp.breakEnd || "14:00",
-            weeklySchedule: parsedWeekly
+            weeklySchedule: parsedWeekly,
+            estado: emp.estado || "Activo",
+            fechaBaja: emp.fechaBaja || ""
           };
           
           // Asegurarse de que tenga estado de asistencia básico si no existía
@@ -1154,7 +1234,9 @@ function syncInitialData() {
               workEnd: emp.workEnd || "17:00",
               breakStart: emp.breakStart || "13:00",
               breakEnd: emp.breakEnd || "14:00",
-              weeklySchedule: parsedWeekly
+              weeklySchedule: parsedWeekly,
+              estado: emp.estado || "Activo",
+              fechaBaja: emp.fechaBaja || ""
             };
             if (!attendanceState[emp.dni]) {
               attendanceState[emp.dni] = { action: 'Desconectado', timestamp: null, history: [] };
@@ -1326,29 +1408,48 @@ function setupEventListeners() {
       const dni = currentSession ? currentSession.dni : null;
       const employee = dni ? employeesDatabase[dni] : null;
 
-      // Restricción de Ingreso Anticipado (Máximo 5 minutos antes del turno programado)
+      // Restricción en Feriados, Días de Descanso e Ingreso Anticipado
       if (action === 'Ingreso' && employee) {
+        const now = new Date();
+        const normToday = getTodayNormalizedDateStr(now);
+        const partsToday = normToday.split('/');
+        const dayMonthToday = `${partsToday[0].padStart(2, '0')}/${partsToday[1].padStart(2, '0')}`;
+        
+        const isStaticHoliday = GLOBAL_FERIADOS.includes(dayMonthToday);
+        const customHoliday = feriadosDatabase.find(f => normalizeDateStr(f.dateStr) === normToday);
+        const isHoliday = isStaticHoliday || !!customHoliday;
+
+        if (isHoliday) {
+          showToast('warning', 'Día Feriado Oficial', 'Hoy es un día feriado oficial. No está permitido registrar ingreso.');
+          return;
+        }
+
+        const dayOfWeek = now.getDay();
+        let todaySched = null;
+
+        if (employee.weeklySchedule) {
+          let schedObj = employee.weeklySchedule;
+          if (typeof schedObj === 'string' && schedObj.trim() !== '') {
+            try { schedObj = JSON.parse(schedObj); } catch (e) { schedObj = null; }
+          }
+          if (schedObj && schedObj[dayOfWeek]) {
+            todaySched = schedObj[dayOfWeek];
+          }
+        }
+
+        if (!todaySched) {
+          if (dayOfWeek === 0) todaySched = { isRestDay: true };
+          else if (dayOfWeek === 6) todaySched = { isRestDay: false, workStart: employee.workStart || "09:00" };
+          else todaySched = { isRestDay: false, workStart: employee.workStart || "08:00" };
+        }
+
+        if (todaySched && todaySched.isRestDay) {
+          showToast('warning', 'Día de Descanso', 'Hoy es tu día de descanso programado. No está permitido registrar ingreso.');
+          return;
+        }
+
         const isFlexible = (employee.workStart === "—" || employee.weeklySchedule === "flexible");
         if (!isFlexible) {
-          const now = new Date();
-          const dayOfWeek = now.getDay();
-          let todaySched = null;
-
-          if (employee.weeklySchedule) {
-            let schedObj = employee.weeklySchedule;
-            if (typeof schedObj === 'string' && schedObj.trim() !== '') {
-              try { schedObj = JSON.parse(schedObj); } catch (e) { schedObj = null; }
-            }
-            if (schedObj && schedObj[dayOfWeek]) {
-              todaySched = schedObj[dayOfWeek];
-            }
-          }
-
-          if (!todaySched) {
-            if (dayOfWeek === 0) todaySched = { isRestDay: true };
-            else if (dayOfWeek === 6) todaySched = { isRestDay: false, workStart: employee.workStart || "09:00" };
-            else todaySched = { isRestDay: false, workStart: employee.workStart || "08:00" };
-          }
 
           if (todaySched && !todaySched.isRestDay) {
             const startStr = todaySched.workStart || "08:00";
@@ -1920,7 +2021,9 @@ function sendAttendanceToGoogleSheets(dni, name, action, customTimeObj = null, s
    ========================================================================== */
 
 function updateAdminView() {
-  const staffIds = Object.keys(employeesDatabase);
+  const allStaffIds = Object.keys(employeesDatabase);
+  // Filtrar solo a los activos para mostrar en el sistema a partir de su fecha de baja
+  const staffIds = allStaffIds.filter(dni => isEmployeeActive(employeesDatabase[dni]));
   statTotalStaff.textContent = staffIds.length;
   
   let activeToday = 0;
@@ -3397,6 +3500,9 @@ function updateReportEmployeeSelect() {
     
     Object.keys(employeesDatabase).forEach(dni => {
       const employee = employeesDatabase[dni];
+      // Si el reporte es 'justSelect', no mostrar inactivos.
+      if (!isEmployeeActive(employee)) return;
+      
       const opt = document.createElement('option');
       opt.value = dni;
       opt.textContent = `${employee.name} (DNI: ${dni})`;
@@ -3412,6 +3518,8 @@ function updateReportEmployeeSelect() {
     justSelect.innerHTML = '<option value="" disabled selected hidden>Seleccionar colaborador...</option>';
     Object.keys(employeesDatabase).forEach(dni => {
       const employee = employeesDatabase[dni];
+      if (!isEmployeeActive(employee)) return;
+      
       const opt = document.createElement('option');
       opt.value = dni;
       opt.textContent = `${employee.name} (DNI: ${dni})`;
@@ -3967,7 +4075,7 @@ function renderConsolidatedTable(history) {
   });
 
   // 6. Preparar y calcular datos por colaborador
-  const dnis = Object.keys(employeesDatabase);
+  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeActive(employeesDatabase[dni]));
   
   if (dnis.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${5 + sortedDates.length}" class="text-center text-muted" style="padding: 25px;">No hay colaboradores en la base de datos.</td></tr>`;
@@ -4521,9 +4629,57 @@ function setupAdminTabs() {
   }
 }
 
-/* ==========================================================================
-   EDITAR COLABORADORES - LÓGICA DEL MODAL
-   ========================================================================== */
+function updateEditModalScheduleVisibility(statusValue) {
+  const isBaja = (statusValue === 'Baja');
+  const typeContainer = document.getElementById('edit-schedule-type-container');
+  const detailsContainer = document.getElementById('edit-schedule-details-container');
+  const triggerContainer = document.getElementById('edit-weekly-trigger-container');
+  const fieldsContainer = document.getElementById('edit-weekly-schedule-fields');
+  const bajaDateContainer = document.getElementById('edit-baja-date-container');
+
+  const elWStart = document.getElementById('edit-work-start');
+  const elWEnd = document.getElementById('edit-work-end');
+  const elBStart = document.getElementById('edit-break-start');
+  const elBEnd = document.getElementById('edit-break-end');
+
+  if (bajaDateContainer) {
+    bajaDateContainer.style.display = isBaja ? 'block' : 'none';
+  }
+
+  if (typeContainer) {
+    typeContainer.style.display = isBaja ? 'none' : 'block';
+  }
+
+  if (triggerContainer) {
+    triggerContainer.style.display = isBaja ? 'none' : 'block';
+  }
+
+  if (isBaja) {
+    if (detailsContainer) detailsContainer.style.display = 'none';
+    if (fieldsContainer) fieldsContainer.classList.add('hidden');
+    if (elWStart) elWStart.removeAttribute('required');
+    if (elWEnd) elWEnd.removeAttribute('required');
+    if (elBStart) elBStart.removeAttribute('required');
+    if (elBEnd) elBEnd.removeAttribute('required');
+  } else {
+    const editScheduleType = document.getElementById('edit-schedule-type');
+    const isFlexible = editScheduleType && editScheduleType.value === 'flexible';
+    if (isFlexible) {
+      if (detailsContainer) detailsContainer.style.display = 'none';
+      if (elWStart) elWStart.removeAttribute('required');
+      if (elWEnd) elWEnd.removeAttribute('required');
+      if (elBStart) elBStart.removeAttribute('required');
+      if (elBEnd) elBEnd.removeAttribute('required');
+    } else {
+      if (detailsContainer) detailsContainer.style.display = 'block';
+      if (elWStart) elWStart.setAttribute('required', 'required');
+      if (elWEnd) elWEnd.setAttribute('required', 'required');
+      if (elBStart) elBStart.setAttribute('required', 'required');
+      if (elBEnd) elBEnd.setAttribute('required', 'required');
+    }
+  }
+}
+window.updateEditModalScheduleVisibility = updateEditModalScheduleVisibility;
 
 function openEditEmployeeModal(dni) {
   logDebug(`[EJECUTANDO] Editar Colaborador DNI: ${dni}`);
@@ -4549,30 +4705,36 @@ function openEditEmployeeModal(dni) {
   if (elRole) elRole.value = employee.role || 'Colaborador';
   if (elPin) elPin.value = employee.pin || "1234";
 
+  const elStatus = document.getElementById('edit-status');
+  const elBajaDateContainer = document.getElementById('edit-baja-date-container');
+  const elBajaDate = document.getElementById('edit-baja-date');
+  if (elStatus) {
+    const rawEstado = String(employee.estado || '').trim().toLowerCase();
+    elStatus.value = rawEstado === 'baja' ? 'Baja' : 'Activo';
+    if (elStatus.value === 'Baja') {
+      if (elBajaDate) elBajaDate.value = employee.fechaBaja || '';
+    } else {
+      if (elBajaDate) elBajaDate.value = '';
+    }
+  }
+
   const isFlexible = (employee.workStart === "—" || employee.weeklySchedule === "flexible");
   const editScheduleType = document.getElementById('edit-schedule-type');
   const editScheduleContainer = document.getElementById('edit-schedule-details-container');
+  if (editScheduleType) {
+    editScheduleType.value = isFlexible ? 'flexible' : 'fixed';
+  }
+
+  if (typeof updateEditModalScheduleVisibility === 'function') {
+    updateEditModalScheduleVisibility(elStatus ? elStatus.value : 'Activo');
+  }
+
   const elWStart = document.getElementById('edit-work-start');
   const elWEnd = document.getElementById('edit-work-end');
   const elBStart = document.getElementById('edit-break-start');
   const elBEnd = document.getElementById('edit-break-end');
 
-  if (editScheduleType) {
-    editScheduleType.value = isFlexible ? 'flexible' : 'fixed';
-    if (isFlexible) {
-      if (editScheduleContainer) editScheduleContainer.classList.add('hidden');
-      if (elWStart) { elWStart.removeAttribute('required'); elWStart.value = "08:00"; }
-      if (elWEnd) { elWEnd.removeAttribute('required'); elWEnd.value = "17:00"; }
-      if (elBStart) { elBStart.removeAttribute('required'); elBStart.value = "13:00"; }
-      if (elBEnd) { elBEnd.removeAttribute('required'); elBEnd.value = "14:00"; }
-    } else {
-      if (editScheduleContainer) editScheduleContainer.classList.remove('hidden');
-      if (elWStart) { elWStart.setAttribute('required', 'required'); elWStart.value = employee.workStart || "08:00"; }
-      if (elWEnd) { elWEnd.setAttribute('required', 'required'); elWEnd.value = employee.workEnd || "17:00"; }
-      if (elBStart) { elBStart.setAttribute('required', 'required'); elBStart.value = employee.breakStart || "13:00"; }
-      if (elBEnd) { elBEnd.setAttribute('required', 'required'); elBEnd.value = employee.breakEnd || "14:00"; }
-    }
-  } else {
+  if (!isFlexible) {
     if (elWStart) elWStart.value = employee.workStart || "08:00";
     if (elWEnd) elWEnd.value = employee.workEnd || "17:00";
     if (elBStart) elBStart.value = employee.breakStart || "13:00";
@@ -4643,6 +4805,15 @@ function setupEditModalListeners() {
     });
   }
 
+  const elStatus = document.getElementById('edit-status');
+  if (elStatus) {
+    elStatus.addEventListener('change', (e) => {
+      if (typeof updateEditModalScheduleVisibility === 'function') {
+        updateEditModalScheduleVisibility(e.target.value);
+      }
+    });
+  }
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const rawDni = document.getElementById('edit-dni-hidden').value;
@@ -4688,6 +4859,9 @@ function setupEditModalListeners() {
     const finalBreakStart = isFlexibleVal ? "—" : breakStart;
     const finalBreakEnd = isFlexibleVal ? "—" : breakEnd;
     const finalWeeklySchedule = isFlexibleVal ? "flexible" : weeklySchedule;
+    
+    const finalStatus = document.getElementById('edit-status') ? document.getElementById('edit-status').value : 'Activo';
+    const finalBajaDate = document.getElementById('edit-baja-date') ? document.getElementById('edit-baja-date').value : '';
 
     employeesDatabase[dni].name = name;
     employeesDatabase[dni].role = role;
@@ -4697,10 +4871,16 @@ function setupEditModalListeners() {
     employeesDatabase[dni].breakStart = finalBreakStart;
     employeesDatabase[dni].breakEnd = finalBreakEnd;
     employeesDatabase[dni].weeklySchedule = finalWeeklySchedule;
+    employeesDatabase[dni].estado = finalStatus;
+    if (finalStatus === 'Baja') {
+      employeesDatabase[dni].fechaBaja = finalBajaDate;
+    } else {
+      delete employeesDatabase[dni].fechaBaja;
+    }
 
     saveState();
     if (googleScriptUrl) {
-      sendUpdateToGoogleSheets(dni, name, role, finalWorkStart, finalWorkEnd, finalBreakStart, finalBreakEnd, pin, finalWeeklySchedule);
+      sendUpdateToGoogleSheets(dni, name, role, finalWorkStart, finalWorkEnd, finalBreakStart, finalBreakEnd, pin, finalWeeklySchedule, finalStatus, finalBajaDate);
     }
     modal.classList.add('hidden');
     modal.style.display = 'none';
@@ -5003,6 +5183,7 @@ function exportConsolidatedExcel() {
   // Filas por cada colaborador
   Object.keys(employeesDatabase).forEach(dni => {
     const employee = employeesDatabase[dni];
+    if (!isEmployeeActive(employee)) return;
     const row = [employee.name, dni];
     
     let totalWorkedSeconds = 0;
@@ -5153,19 +5334,9 @@ function setupWeeklyScheduleUIListeners() {
   const editScheduleContainer = document.getElementById('edit-schedule-details-container');
   if (editScheduleType && editScheduleContainer) {
     editScheduleType.addEventListener('change', () => {
-      if (editScheduleType.value === 'flexible') {
-        editScheduleContainer.classList.add('hidden');
-        document.getElementById('edit-work-start').removeAttribute('required');
-        document.getElementById('edit-work-end').removeAttribute('required');
-        document.getElementById('edit-break-start').removeAttribute('required');
-        document.getElementById('edit-break-end').removeAttribute('required');
-      } else {
-        editScheduleContainer.classList.remove('hidden');
-        document.getElementById('edit-work-start').setAttribute('required', 'required');
-        document.getElementById('edit-work-end').setAttribute('required', 'required');
-        document.getElementById('edit-break-start').setAttribute('required', 'required');
-        document.getElementById('edit-break-end').setAttribute('required', 'required');
-      }
+      const elStatus = document.getElementById('edit-status');
+      const currentStatus = elStatus ? elStatus.value : 'Activo';
+      updateEditModalScheduleVisibility(currentStatus);
     });
   }
 
@@ -5332,9 +5503,9 @@ function renderDailySummaryTable(history) {
     printDate.textContent = selectedDateStr;
   }
 
-  const staffIds = Object.keys(employeesDatabase).sort((a, b) => 
-    employeesDatabase[a].name.localeCompare(employeesDatabase[b].name)
-  );
+  const staffIds = Object.keys(employeesDatabase)
+    .filter(dni => isEmployeeActive(employeesDatabase[dni]))
+    .sort((a, b) => employeesDatabase[a].name.localeCompare(employeesDatabase[b].name));
 
   if (staffIds.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding: 25px;">No hay colaboradores registrados.</td></tr>';
@@ -5781,7 +5952,7 @@ function renderMonthlyTable(history) {
   const totalDaysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
   tbody.innerHTML = '';
-  const dnis = Object.keys(employeesDatabase);
+  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeActive(employeesDatabase[dni]));
   
   if (dnis.length === 0) {
     tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted" style="padding: 25px;">No hay colaboradores registrados.</td></tr>';
@@ -6024,7 +6195,7 @@ function exportMonthlyExcel() {
   ];
   rows.push(header);
 
-  const dnis = Object.keys(employeesDatabase);
+  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeActive(employeesDatabase[dni]));
   dnis.forEach(dni => {
     const employee = employeesDatabase[dni];
     const isFlexible = (employee.workStart === "-" || employee.workStart === "—" || employee.weeklySchedule === "flexible");
@@ -7092,6 +7263,26 @@ function isMobileDevice() {
   return false;
 }
 
+function isRestrictedMobileRole(role) {
+  const roleLower = String(role || '').toLowerCase().trim();
+  if (!roleLower) return true;
+
+  // Cargos autorizados explícitamente en móviles (Administración, Supervisión, Jefatura, Gerencia)
+  const isAuthorizedAdminRole = roleLower.includes('admin') || 
+                                roleLower.includes('supervisor') || 
+                                roleLower.includes('jefe') || 
+                                roleLower.includes('gerent') || 
+                                roleLower.includes('director') || 
+                                roleLower.includes('encargado');
+
+  if (isAuthorizedAdminRole) {
+    return false; // NO restringido -> PERMITIDO en móvil
+  }
+
+  // Cargos operativos/ventas o no administrativos -> RESTRINGIDOS en móvil
+  return true;
+}
+
 function lockBodyForSecurity(lock) {
   // Hace la pantalla de bloqueo verdaderamente inescapable
   document.body.style.overflow = lock ? 'hidden' : '';
@@ -7194,22 +7385,25 @@ function validateDeviceSecurity() {
   
   if (!blockScreen) return false;
 
-  // Case 1: Bloqueo de Móviles y Tablets
-  if (securityBlockMobile && isMobileDevice()) {
-    blockTitle.textContent = "Dispositivo No Autorizado";
-    blockMessage.innerHTML = "🚫 Por motivos de seguridad y control interno, <strong>el acceso al sistema desde celulares y tablets está bloqueado</strong>.<br><br>Por favor, utilice la computadora de escritorio designada en la oficina.";
-    blockIcon.textContent = "smartphone";
-    if (blockIconContainer) {
-      blockIconContainer.style.borderColor = "#ef4444";
-      blockIconContainer.style.background = "rgba(239, 68, 68, 0.1)";
+  // Case 1: Bloqueo de Móviles y Tablets por Cargo Oficial
+  // Solo se bloquea si hay una sesión activa de un cargo restringido (ej. Colaborador / Ventas)
+  if (securityBlockMobile && isMobileDevice() && currentSession && currentSession.role) {
+    if (isRestrictedMobileRole(currentSession.role)) {
+      blockTitle.textContent = "Dispositivo No Autorizado";
+      blockMessage.innerHTML = `🚫 Por motivos de seguridad, tu cargo (<strong>${currentSession.role}</strong>) no tiene permitido registrar asistencia desde celulares o tablets.<br><br>Por favor, utilice la computadora de escritorio fija de la oficina.`;
+      blockIcon.textContent = "smartphone";
+      if (blockIconContainer) {
+        blockIconContainer.style.borderColor = "#ef4444";
+        blockIconContainer.style.background = "rgba(239, 68, 68, 0.1)";
+      }
+      blockIcon.style.color = "#ef4444";
+      if (btnShowAuth) btnShowAuth.style.display = "none";
+      if (authFormContainer) authFormContainer.style.display = "none";
+      blockScreen.classList.remove('hidden');
+      blockScreen.style.display = "flex";
+      lockBodyForSecurity(true);
+      return true;
     }
-    blockIcon.style.color = "#ef4444";
-    if (btnShowAuth) btnShowAuth.style.display = "none";
-    if (authFormContainer) authFormContainer.style.display = "none";
-    blockScreen.classList.remove('hidden');
-    blockScreen.style.display = "flex";
-    lockBodyForSecurity(true);
-    return true;
   }
 
   // Case 2: Restricción de PCs autorizadas
@@ -8635,6 +8829,7 @@ function updateValidationEmployeeSelectOptions() {
 
   staffKeys.sort((a, b) => (employeesDatabase[a]?.name || '').localeCompare(employeesDatabase[b]?.name || '')).forEach(key => {
     const emp = employeesDatabase[key];
+    if (!isEmployeeActive(emp)) return;
     const cleanD = String(emp.dni || key).replace(/'/g, '').trim();
     const isSel = (currentVal === cleanD) ? 'selected' : '';
     html += `<option value="${cleanD}" ${isSel}>${escapeHtml(emp.name)} (${cleanD})</option>`;
@@ -8849,6 +9044,7 @@ function renderValidationsView() {
   staffKeys.forEach(dni => {
     const emp = employeesDatabase[dni];
     if (!emp) return;
+    if (!isEmployeeActive(emp)) return;
 
     const cleanDni = String(emp.dni || dni).replace(/'/g, '').trim();
     const cleanEmpVal = String(empVal || '').replace(/'/g, '').trim();

@@ -761,23 +761,21 @@
 
           <!-- Tabla de Resultados <div class="card-inner report-container">-->
           <div class="table-responsive report-scroll-container">
-            <div class="table-responsive">
-              <table class="admin-table">
-                <thead>
-                  <tr class="val-table-header-center">
-                    <th style="text-align: left !important;">Colaborador</th>
-                    <th>DNI</th>
-                    <th>Tardanzas (3 = 1 Falta)</th>
-                    <th>Faltas (Mes / 6M)</th>
-                    <th>Status</th>
-                    <th>Acción</th>
-                  </tr>
-                </thead>
-                <tbody id="val-table-body" class="val-table-body-center">
-                  <!-- Se llena dinámicamente -->
-                </tbody>
-              </table>
-            </div>
+            <table class="admin-table">
+              <thead>
+                <tr class="val-table-header-center">
+                  <th style="text-align: left !important;">Colaborador</th>
+                  <th>DNI</th>
+                  <th>Tardanzas (3 = 1 Falta)</th>
+                  <th>Faltas (Mes / 6M)</th>
+                  <th>Status</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="val-table-body" class="val-table-body-center">
+                <!-- Se llena dinámicamente -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1673,7 +1671,27 @@
             </div>
           </div>
 
-          <div class="input-group" style="margin-bottom: 15px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 15px;">
+            <div class="input-group" style="margin-bottom: 0;">
+              <label for="edit-status">Estado del Colaborador</label>
+              <div class="input-wrapper select-wrapper">
+                <span class="material-symbols-rounded input-icon">how_to_reg</span>
+                <select id="edit-status" style="width: 100%; background: var(--bg-inner); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px 12px 44px; color: var(--text-primary); font-family: var(--font-main); font-size: 1rem; -webkit-appearance: none; outline:none; cursor: pointer;">
+                  <option value="Activo">Activo</option>
+                  <option value="Baja">Dado de Baja</option>
+                </select>
+              </div>
+            </div>
+            <div class="input-group" id="edit-baja-date-container" style="margin-bottom: 0; display: none;">
+              <label for="edit-baja-date">Fecha de Baja</label>
+              <div class="input-wrapper">
+                <span class="material-symbols-rounded input-icon">event_busy</span>
+                <input type="date" id="edit-baja-date">
+              </div>
+            </div>
+          </div>
+
+          <div class="input-group" id="edit-schedule-type-container" style="margin-bottom: 15px;">
             <label for="edit-schedule-type">Tipo de Jornada</label>
             <div class="input-wrapper select-wrapper">
               <span class="material-symbols-rounded input-icon">tune</span>
@@ -1720,7 +1738,7 @@
           </div>
 
           <!-- Configuración Semanal Acordeón Editar -->
-          <div class="weekly-schedule-config-trigger" style="margin-top: 15px; margin-bottom: 10px;">
+          <div class="weekly-schedule-config-trigger" id="edit-weekly-trigger-container" style="margin-top: 15px; margin-bottom: 10px;">
             <button type="button" id="btn-toggle-edit-weekly-schedule" class="btn-outline w-full" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px;">
               <span class="material-symbols-rounded">calendar_month</span>
               <span>Personalizar Horarios Semanales</span>
@@ -1999,18 +2017,18 @@
           </div>
 
           <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid #dc2626; padding: 12px 16px; border-radius: 6px;">
-            <h4 style="margin: 0 0 4px 0; font-size: 0.92rem; color: #f87171; font-weight: 700;">3. Regla 3: Retiro por Faltas Mensuales o Tardanzas</h4>
+            <h4 style="margin: 0 0 4px 0; font-size: 0.92rem; color: #f87171; font-weight: 700;">3. Regla 3: Conversión de Tardanzas a Faltas</h4>
+            <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; opacity: 0.9;">Cada 3 tardanzas efectivas acumuladas equivalen exactamente a 1 Falta Injustificada.</p> 
+        </div>
+          <div style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 6px;">
+            <h4 style="margin: 0 0 4px 0; font-size: 0.92rem; color: #fbbf24; font-weight: 700;">4. Regla 4: Retiro por Faltas Mensuales o Tardanzas </h4>
             <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; opacity: 0.9;">Acumular 5 faltas en el mes, 3 faltas por tardanzas (9 tardanzas efectivas) o la combinación de 2 faltas por tardanza (6 tardanzas) + 1 falta injustificada constituyen ⛔ <strong>Retiro de la Empresa</strong>.</p>
           </div>
-
-          <div style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 6px;">
-            <h4 style="margin: 0 0 4px 0; font-size: 0.92rem; color: #fbbf24; font-weight: 700;">4. Regla 4: Retiro Semestral (15 Faltas en 6 Meses)</h4>
-            <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; opacity: 0.9;">Acumular 15 faltas en los últimos 6 meses (vigente a partir del 01/07/2026 en adelante) constituye ⛔ <strong>Retiro de la Empresa</strong>.</p>
-          </div>
+          
 
           <div style="background: rgba(59, 130, 246, 0.08); border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 6px;">
-            <h4 style="margin: 0 0 4px 0; font-size: 0.92rem; color: #60a5fa; font-weight: 700;">5. Regla 5: Conversión de Tardanzas a Faltas</h4>
-            <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; opacity: 0.9;">Cada 3 tardanzas efectivas acumuladas equivalen exactamente a 1 Falta Injustificada.</p>
+            <h4 style="margin: 0 0 4px 0; font-size: 0.92rem; color: #60a5fa; font-weight: 700;">5. Regla 5: Retiro Semestral (15 Faltas en 6 Meses)</h4>
+            <p style="margin: 0; font-size: 0.85rem; line-height: 1.4; opacity: 0.9;">Acumular 15 faltas en los últimos 6 meses (vigente a partir del 01/07/2026 en adelante) constituye ⛔ <strong>Retiro de la Empresa</strong>.</p> 
           </div>
 
         </div>
@@ -2023,6 +2041,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <!-- Script Principal de la Aplicación -->
-  <script src="app.js?v=20260725_40"></script>
+  <script src="app.js?v=20260725_48"></script>
 </body>
 </html>
