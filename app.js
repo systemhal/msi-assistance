@@ -2470,8 +2470,9 @@ function switchAdminTab(targetTab) {
   } else if (targetTab === 'consolidated') {
     if (typeof loadConsolidatedReport === 'function') loadConsolidatedReport();
   } else if (targetTab === 'monthly') {
-    if (typeof renderMonthlyReport === 'function') renderMonthlyReport();
+    if (typeof loadMonthlyReport === 'function') loadMonthlyReport();
   } else if (targetTab === 'reports') {
+
     const select = document.getElementById('select-report-employee');
     if (select && select.value && typeof renderAgentReport === 'function') renderAgentReport(select.value);
   } else if (targetTab === 'gerencial') {
@@ -5936,6 +5937,12 @@ function loadMonthlyReport() {
   if (!tbody) return;
   
   const monthInput = document.getElementById('monthly-select-month');
+  if (monthInput && !monthInput.value) {
+    const now = new Date();
+    const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+    monthInput.value = `${now.getFullYear()}-${monthStr}`;
+  }
+
   if (!monthInput || !monthInput.value) {
     tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted" style="padding: 25px;">Por favor selecciona un mes válido.</td></tr>';
     return;
@@ -5949,6 +5956,7 @@ function loadMonthlyReport() {
   const history = getAllCachedHistory();
   renderMonthlyTable(history);
 }
+
 
 let monthlySortCol = 'name';
 let monthlySortDir = 'asc';

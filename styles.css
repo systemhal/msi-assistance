@@ -1473,59 +1473,90 @@ input::-webkit-calendar-picker-indicator:hover {
   .clock-display { font-size: 2.6rem; }
   .admin-stats-grid { grid-template-columns: 1fr 1fr; }
 
-  /* Full responsive mobile filter bars & control alignment */
   .report-filter-bar,
   .consolidated-filter-bar,
   .monthly-filter-bar,
   .daily-filter-bar,
   .quick-filters-group {
     display: flex !important;
-    flex-direction: column !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding: 6px 10px !important;
     width: 100% !important;
-    gap: 10px !important;
+  }
+  .report-filter-bar::-webkit-scrollbar,
+  .consolidated-filter-bar::-webkit-scrollbar,
+  .monthly-filter-bar::-webkit-scrollbar,
+  .daily-filter-bar::-webkit-scrollbar {
+    display: none !important;
   }
 
-  .report-filter-bar .input-group,
-  .consolidated-filter-bar .input-group,
-  .monthly-filter-bar .input-group,
-  .daily-filter-bar .input-group,
-  .report-filter-bar select,
-  .report-filter-bar input,
-  .consolidated-filter-bar select,
-  .consolidated-filter-bar input,
   .report-filter-bar button,
-  .consolidated-filter-bar button {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
+  .consolidated-filter-bar button,
+  .monthly-filter-bar button,
+  .daily-filter-bar button {
+    width: auto !important;
+    max-width: none !important;
+    flex-shrink: 0 !important;
+    height: 32px !important;
+    font-size: 0.75rem !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
   }
+
 
   .admin-top-bar {
     display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 10px !important;
-    margin-bottom: 16px !important;
-    padding-bottom: 12px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 6px !important;
     border-bottom: 1px solid var(--border-color) !important;
   }
 
-  .admin-top-actions {
-    display: grid !important;
-    grid-template-columns: auto 1fr 1fr !important;
-    gap: 8px !important;
-    width: 100% !important;
+  .admin-top-info {
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
+    gap: 6px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .admin-page-title {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .admin-top-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 4px !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
   }
 
   .admin-top-actions .btn-top-sync,
   .admin-top-actions .btn-top-close {
-    width: 100% !important;
-    justify-content: center !important;
-    font-size: 0.8rem !important;
-    padding: 0 10px !important;
-    height: 38px !important;
+    width: auto !important;
+    height: 30px !important;
+    font-size: 0.72rem !important;
+    padding: 0 8px !important;
   }
+
 
   .table-responsive,
   .report-scroll-container {
@@ -1907,11 +1938,27 @@ input::-webkit-calendar-picker-indicator:hover {
   align-items: center;
   gap: 8px;
 }
+.quick-filters-group {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+.quick-filters-group button {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
 .gerencial-filter-label {
   font-size: 0.82rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
+
 .gerencial-select, .gerencial-input {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -4085,19 +4132,18 @@ body.light-theme .btn-admin-edit:hover {
 }
 
 /* =============================================================================
-   ADMIN BOTTOM NAV — Mobile App Style (Facebook / Instagram pattern)
-   Selector: .admin-mobile-bottom-nav  (nuevo elemento HTML en #view-admin)
+   ADMIN BOTTOM NAV & MOBILE APP LAYOUT — SENIOR UI/UX REFINEMENT
    ============================================================================= */
 
-/* ── DESKTOP: ocultar el bottom nav ── */
+/* ── DESKTOP (≥ 993px): Ocultar elementos móviles nativos ── */
 .admin-mobile-bottom-nav {
-  display: none;
+  display: none !important;
 }
 
-/* ── MOBILE (≤ 992px): mostrar como app nativa ── */
+/* ── MOBILE (≤ 992px): Diseño de App Móvil Nativa ── */
 @media (max-width: 992px) {
 
-  /* ─── Layout del contenedor #view-admin como app móvil ─── */
+  /* ─── 1. CONTENEDOR #view-admin: Pantalla completa fija ─── */
   #view-admin.admin-layout-sidebar:not(.hidden) {
     position: fixed !important;
     inset: 0 !important;
@@ -4119,7 +4165,7 @@ body.light-theme .btn-admin-edit:hover {
     z-index: 900 !important;
   }
 
-  /* ─── TOP APP BAR: sidebar = cabecera de app ─── */
+  /* ─── 2. TOP APP BAR SUPERIOR: Cabecera ultra-delgada de 40px ─── */
   .admin-sidebar {
     order: 1 !important;
     flex-shrink: 0 !important;
@@ -4132,34 +4178,56 @@ body.light-theme .btn-admin-edit:hover {
     background: var(--bg-secondary) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.2) !important;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1) !important;
     z-index: 50 !important;
     padding-top: env(safe-area-inset-top, 0px) !important;
   }
 
-  /* Brand: logo + nombre + badge */
+  /* Brand row: Logo de 28px + Nombre + Badge en la MISMA fila horizontal */
   .admin-sidebar-brand {
     display: flex !important;
     align-items: center !important;
-    padding: 10px 16px !important;
-    gap: 10px !important;
-    min-height: 56px !important;
+    justify-content: space-between !important;
+    padding: 6px 12px !important;
+    gap: 8px !important;
+    min-height: 40px !important;
     border-bottom: none !important;
   }
-  .admin-sidebar-brand h2 {
-    font-size: 1.05rem !important;
-    font-weight: 700 !important;
+  .admin-sidebar-brand .avatar-glow {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 1px !important;
+    border-width: 1.5px !important;
+  }
+  .admin-sidebar-brand > div:last-child {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
     flex: 1 !important;
+  }
+  .admin-sidebar-brand h2 {
+    font-size: 0.88rem !important;
+    font-weight: 700 !important;
     margin: 0 !important;
+    white-space: nowrap !important;
     color: var(--text-primary) !important;
   }
+  .admin-sidebar-brand .badge-admin {
+    font-size: 0.62rem !important;
+    padding: 2px 6px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+  }
 
-  /* Ocultar nav vertical del sidebar en mobile */
-  .admin-sidebar-nav-container { display: none !important; }
-  .admin-sidebar-footer         { display: none !important; }
-  .sidebar-nav-title            { display: none !important; }
+  /* Ocultar elementos verticales del sidebar */
+  .admin-sidebar-nav-container,
+  .admin-sidebar-footer,
+  .sidebar-nav-title {
+    display: none !important;
+  }
 
-  /* ─── CONTENIDO CENTRAL: scrolleable ─── */
+  /* ─── 3. CONTENIDO CENTRAL: Scrollable ─── */
   .admin-main-content {
     order: 2 !important;
     flex: 1 1 0 !important;
@@ -4167,35 +4235,112 @@ body.light-theme .btn-admin-edit:hover {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
-    padding: 14px !important;
-    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+    padding: 10px 10px 16px 10px !important;
+    padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px)) !important;
     background: var(--bg-page) !important;
     scroll-behavior: smooth !important;
   }
 
-  /* Top bar: sticky dentro del contenido (título + acciones) */
+  /* ─── 4. SUB-HEADER ULTRA COMPACTO DE 1 SOLA FILA HORIZONTAL (30px) ─── */
   .admin-top-bar {
     position: sticky !important;
-    top: -14px !important;
-    z-index: 10 !important;
+    top: -10px !important;
+    z-index: 20 !important;
     background: var(--bg-page) !important;
-    margin: -14px -14px 16px !important;
-    padding: 12px 14px !important;
+    margin: -10px -10px 10px -10px !important;
+    padding: 6px 10px !important;
     border-bottom: 1px solid var(--border-color) !important;
     display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    backdrop-filter: blur(12px) !important;
-    -webkit-backdrop-filter: blur(12px) !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
   }
-  .admin-page-title   { font-size: 1.15rem !important; flex: 1 !important; }
-  .admin-top-info     { display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; }
-  .admin-top-actions  { display: flex !important; gap: 8px !important; width: 100% !important; }
-  .admin-top-actions .btn-top-theme { width: 40px !important; height: 40px !important; flex-shrink: 0 !important; }
-  .admin-top-actions .btn-top-sync  { flex: 1 !important; height: 40px !important; justify-content: center !important; font-size: 0.82rem !important; }
-  .admin-top-actions .btn-top-close { flex: 1 !important; height: 40px !important; justify-content: center !important; font-size: 0.82rem !important; }
 
-  /* ─── BOTTOM NAVIGATION BAR: fijo en la parte inferior de la pantalla ─── */
+  /* Info (Título + Conectado en 1 bloque horizontal) */
+  .admin-top-info {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .admin-page-title {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  #cloud-status-indicator {
+    padding: 2px 6px !important;
+    font-size: 0.62rem !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+  }
+
+  /* Botones de Acción (Tema, Sync, Volver) en 1 sola fila a la derecha */
+  .admin-top-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    width: auto !important;
+  }
+  .admin-top-actions .btn-top-theme {
+    width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    border-radius: var(--radius-sm) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .admin-top-actions .btn-top-theme .material-symbols-rounded {
+    font-size: 18px !important;
+  }
+  .admin-top-actions .btn-top-sync {
+    width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    border-radius: var(--radius-sm) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .admin-top-actions .btn-top-sync > span:last-child {
+    display: none !important; /* Ocultar texto largo en mobile */
+  }
+  .admin-top-actions .btn-top-sync .material-symbols-rounded {
+    font-size: 18px !important;
+  }
+  .admin-top-actions .btn-top-close {
+    height: 30px !important;
+    min-height: 30px !important;
+    font-size: 0.72rem !important;
+    padding: 0 8px !important;
+    justify-content: center !important;
+    border-radius: var(--radius-sm) !important;
+    white-space: nowrap !important;
+    gap: 3px !important;
+  }
+  .admin-top-actions .btn-top-close .material-symbols-rounded {
+    font-size: 16px !important;
+  }
+
+
+
+  /* ─── 5. BOTTOM NAVIGATION BAR FIJA ─── */
   .admin-mobile-bottom-nav {
     position: fixed !important;
     bottom: 0 !important;
@@ -4208,36 +4353,34 @@ body.light-theme .btn-admin-edit:hover {
     height: auto !important;
     background: var(--bg-secondary) !important;
     border-top: 1px solid var(--border-color) !important;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.25) !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25) !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
-    /* Fade en extremos */
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%) !important;
-    mask-image:         linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%) !important;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
+    mask-image: linear-gradient(to right, transparent 0%, black 3%, black 97%, transparent 100%) !important;
   }
   .admin-mobile-bottom-nav::-webkit-scrollbar { display: none !important; }
 
-
-  /* Cada botón del bottom nav */
+  /* Pestaña individual del Bottom Nav */
   .admin-mob-tab {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    flex: 1 0 64px !important;
-    min-width: 60px !important;
-    max-width: 90px !important;
-    gap: 3px !important;
-    padding: 9px 6px 7px !important;
+    flex: 1 0 62px !important;
+    min-width: 58px !important;
+    max-width: 84px !important;
+    gap: 2px !important;
+    padding: 8px 4px 6px !important;
     border: none !important;
     border-radius: 0 !important;
     background: transparent !important;
     color: var(--text-muted) !important;
     font-family: var(--font-display) !important;
-    font-size: 0.62rem !important;
+    font-size: 0.6rem !important;
     font-weight: 500 !important;
     white-space: nowrap !important;
     cursor: pointer !important;
@@ -4247,22 +4390,10 @@ body.light-theme .btn-admin-edit:hover {
     user-select: none !important;
     -webkit-user-select: none !important;
   }
-
-  /* Ícono */
   .admin-mob-tab .material-symbols-rounded {
-    font-size: 24px !important;
-    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), color 0.2s ease !important;
+    font-size: 22px !important;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease !important;
   }
-
-  /* Ripple al tocar */
-  .admin-mob-tab:active {
-    background: rgba(var(--primary-rgb, 99,102,241), 0.08) !important;
-  }
-  .admin-mob-tab:active .material-symbols-rounded {
-    transform: scale(0.9) !important;
-  }
-
-  /* ─── ESTADO ACTIVO: estilo Instagram/Facebook ─── */
   .admin-mob-tab.active {
     color: var(--primary) !important;
     font-weight: 700 !important;
@@ -4272,15 +4403,13 @@ body.light-theme .btn-admin-edit:hover {
     transform: scale(1.12) translateY(-1px) !important;
     font-variation-settings: 'FILL' 1 !important;
   }
-
-  /* Indicador: pequeña línea en la parte superior del tab activo */
   .admin-mob-tab.active::before {
     content: '' !important;
     position: absolute !important;
     top: 0 !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    width: 28px !important;
+    width: 26px !important;
     height: 3px !important;
     background: var(--primary) !important;
     border-radius: 0 0 4px 4px !important;
@@ -4288,24 +4417,267 @@ body.light-theme .btn-admin-edit:hover {
   }
   @keyframes mob-tab-indicator {
     from { width: 0; opacity: 0; }
-    to   { width: 28px; opacity: 1; }
+    to   { width: 26px; opacity: 1; }
+  }
+
+  /* ─── 6. TARJETAS & MÉTRICAS (ANALYTICS) EN MÓVIL ─── */
+  .admin-analytics-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .analytics-card {
+    padding: 12px 10px !important;
+    min-height: 80px !important;
+    gap: 10px !important;
+  }
+  .analytics-ring-wrap {
+    width: 46px !important;
+    height: 46px !important;
+  }
+  .analytics-ring-wrap svg {
+    width: 46px !important;
+    height: 46px !important;
+  }
+  .analytics-ring-val {
+    font-size: 0.75rem !important;
+  }
+  .analytics-card-info h4 {
+    font-size: 0.82rem !important;
+  }
+  .analytics-card-info p {
+    font-size: 0.72rem !important;
+  }
+
+  /* ─── 7. FILTROS Y BARRAS DE CONTROL EN MÓVIL ─── */
+  /* ─── REPORTE POR AGENTE (REPORT) FILTERS: EXACTAMENTE 2 FILAS ─── */
+  .report-filter-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* FILA 1: Selector de Colaborador y Fechas (Desde/Hasta) */
+  .report-row-1 {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  /* FILA 2: Botones de Acción Horizontales (Filtrar, Exportar Excel, Imprimir/PDF) */
+  .report-row-2 {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .report-row-2 button {
+    flex: 1 1 0 !important;
+    height: 34px !important;
+    font-size: 0.78rem !important;
+    padding: 0 6px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    border-radius: var(--radius-sm) !important;
+  /* ─── CONTROL DE VALIDACIONES (VAL) FILTERS: EXACTAMENTE 2 FILAS ─── */
+  .val-filter-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* FILA 1: Sanción, Colaborador, Tipo Horario */
+  .val-row-1 {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .val-row-1::-webkit-scrollbar { display: none !important; }
+
+
+  /* FILA 2: Rango de Fechas, Accesos Rápidos y Exportar Excel */
+  .val-row-2 {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .val-row-2 button {
+    height: 34px !important;
+    font-size: 0.78rem !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+
+
+  /* ─── RESUMEN GENERAL (CONSOLIDATED) FILTERS: EXACTAMENTE 2 FILAS ─── */
+  .consolidated-filter-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* FILA 1: Fechas (Desde / Hasta) y Filtros Rápidos */
+  .consolidated-row-1 {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .consolidated-row-1::-webkit-scrollbar { display: none !important; }
+
+  /* FILA 2: Los 3 Botones de Acción Horizontales (Filtrar, Exportar Excel, Imprimir/PDF) */
+  .consolidated-row-2 {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .consolidated-row-2 button {
+    flex: 1 1 0 !important;
+    height: 34px !important;
+    font-size: 0.78rem !important;
+    padding: 0 6px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    border-radius: var(--radius-sm) !important;
+  }
+  .consolidated-row-2 button .material-symbols-rounded {
+    font-size: 16px !important;
+  }
+
+
+  .gerencial-filters-group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .gerencial-filter-label {
+    font-size: 0.75rem !important;
+    white-space: nowrap !important;
+  }
+
+  .gerencial-select,
+  .gerencial-input,
+  .daily-filter-bar input[type="date"],
+  .consolidated-filter-bar input[type="date"] {
+    height: 32px !important;
+    font-size: 0.78rem !important;
+    padding: 2px 6px !important;
+    flex-shrink: 0 !important;
+    width: auto !important;
+  }
+
+  .report-filter-bar button,
+  .monthly-filter-bar button,
+  .daily-filter-bar button {
+    height: 32px !important;
+    font-size: 0.75rem !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    grid-column: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+  }
+
+
+
+  /* ─── 8. TABLAS RESPONSIVAS CON COLUMNA FIJA ─── */
+  .table-responsive,
+  .report-scroll-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  .table-sticky-colaborador-dni th:nth-child(1) {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 25 !important;
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+  }
+  .table-sticky-colaborador-dni td:nth-child(1) {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 5 !important;
+    background-color: var(--bg-card, #ffffff) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1) !important;
   }
 }
 
-/* ── Mobile pequeño (≤ 480px) ── */
-@media (max-width: 480px) {
-  .admin-sidebar-brand { padding: 8px 12px !important; min-height: 50px !important; }
-  .admin-sidebar-brand h2 { font-size: 0.9rem !important; }
-  .admin-mob-tab { min-width: 52px !important; font-size: 0.58rem !important; padding: 8px 4px 6px !important; }
-  .admin-mob-tab .material-symbols-rounded { font-size: 22px !important; }
-  .admin-top-actions .btn-top-sync > span:last-child { display: none !important; }
-  .admin-top-actions .btn-top-sync { flex: 0 0 40px !important; padding: 0 !important; }
-  .admin-main-content { padding: 12px 10px !important; padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px)) !important; }
-}
 
-/* ── iPhone SE (≤ 375px) ── */
-@media (max-width: 375px) {
-  .admin-mob-tab { min-width: 46px !important; font-size: 0.54rem !important; padding: 7px 3px 5px !important; }
-  .admin-mob-tab .material-symbols-rounded { font-size: 20px !important; }
+/* ── Breakpoint extra compacto (≤ 480px) ── */
+@media (max-width: 480px) {
+  .admin-analytics-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .admin-top-actions .btn-top-sync > span:last-child {
+    display: none !important;
+  }
+  .admin-top-actions .btn-top-sync {
+    flex: 0 0 38px !important;
+    padding: 0 !important;
+  }
 }
 

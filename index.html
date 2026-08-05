@@ -16,11 +16,12 @@
     style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src    'self' https://fonts.gstatic.com;
     img-src     'self' data: blob: https:;
-    connect-src 'self' https://script.google.com https://fonts.googleapis.com;
+    connect-src 'self' https://script.google.com https://script.googleusercontent.com https://fonts.googleapis.com;
     object-src  'none';
     base-uri    'self';
     form-action 'self';
   ">
+
   <!-- Evita que el navegador adivine el tipo de contenido (MIME sniffing) -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <!-- No permitir que esta página sea embebida en iframes de terceros -->
@@ -751,56 +752,60 @@
             </div>
           </div>
 
-          <!-- Panel de Filtros Horizontal Estilo Gerencial (Una Sola Línea) -->
-          <div class="gerencial-filters-bar card-inner val-single-line-bar" style="margin-bottom: 20px;">
-            <div class="gerencial-filters-group">
-              <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">tune</span>
-              <!--<span style="font-weight: 600; font-size: 0.95rem;">Filtros</span> -->
+          <!-- Panel de Filtros en 2 Filas Ordenadas -->
+          <div class="gerencial-filters-bar card-inner no-print val-filter-bar" id="val-filter-bar" style="display: flex !important; flex-direction: column !important; gap: 8px !important; width: 100% !important;">
+            <!-- FILA 1: Sanción, Colaborador y Tipo Horario -->
+            <div class="val-row-1" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 8px !important; width: 100% !important; overflow-x: auto !important; white-space: nowrap !important;">
+              <div class="gerencial-filters-group">
+                <span class="material-symbols-rounded" style="color: var(--primary); font-size: 18px;">tune</span>
+                <span style="font-weight: 600; font-size: 0.85rem;">Filtros</span>
+              </div>
+              <div class="gerencial-filters-group">
+                <label class="gerencial-filter-label" for="val-select-status">Sanción</label>
+                <select id="val-select-status" class="gerencial-select">
+                  <option value="all">Todos los Estados</option>
+                  <option value="Baja Automática">🚨 Baja Automática (Regla 2)</option>
+                  <option value="Causal de Retiro">⛔ Causal de Retiro (Regla 3/4)</option>
+                  <option value="Exceso Tolerancia">⚠️ Exceso Tolerancia (Regla 1)</option>
+                  <option value="En Regla">✅ En Regla</option>
+                </select>
+              </div>
+              <div class="gerencial-filters-group" style="flex: 1; min-width: 180px;">
+                <label class="gerencial-filter-label" for="val-select-employee">Colaborador</label>
+                <select id="val-select-employee" class="gerencial-select" style="width: 100%;">
+                  <option value="all">Todos los Colaboradores</option>
+                </select>
+              </div>
+              <div class="gerencial-filters-group">
+                <label class="gerencial-filter-label" for="val-select-schedule-type">Tipo Horario</label>
+                <select id="val-select-schedule-type" class="gerencial-select">
+                  <option value="all">Todos los Horarios</option>
+                  <option value="fijo">Horario Fijo</option>
+                  <option value="flexible">Horario Flexible</option>
+                </select>
+              </div>
             </div>
 
-            <div class="gerencial-filters-group">
-              <label class="gerencial-filter-label" for="val-select-status">Dictamen / Sanción</label>
-              <select id="val-select-status" class="gerencial-select">
-                <option value="all">Todos los Estados</option>
-                <option value="Baja Automática">🚨 Baja Automática (Regla 2)</option>
-                <option value="Causal de Retiro">⛔ Causal de Retiro (Regla 3/4)</option>
-                <option value="Exceso Tolerancia">⚠️ Exceso Tolerancia (Regla 1)</option>
-                <option value="En Regla">✅ En Regla</option>
-              </select>
-            </div>
-
-            <div class="gerencial-filters-group" style="flex: 1; min-width: 220px;">
-              <label class="gerencial-filter-label" for="val-select-employee">Colaborador</label>
-              <select id="val-select-employee" class="gerencial-select" style="width: 100%;">
-                <option value="all">Todos los Colaboradores</option>
-              </select>
-            </div>
-
-            <div class="gerencial-filters-group">
-              <label class="gerencial-filter-label" for="val-select-schedule-type">Tipo Horario</label>
-              <select id="val-select-schedule-type" class="gerencial-select">
-                <option value="all">Todos los Horarios</option>
-                <option value="fijo">Horario Fijo</option>
-                <option value="flexible">Horario Flexible</option>
-              </select>
-            </div>
-
-            <div class="gerencial-filters-group">
-              <label class="gerencial-filter-label" for="val-input-start-date">Desde</label>
-              <input type="date" id="val-input-start-date" class="gerencial-input">
-              <label class="gerencial-filter-label" for="val-input-end-date">Hasta</label>
-              <input type="date" id="val-input-end-date" class="gerencial-input">
-            </div>
-
-            <div class="gerencial-filters-group" style="gap: 6px;">
-              <button type="button" id="btn-val-quick-month" class="btn-outline" style="padding: 6px 12px; font-size: 0.82rem;">Mes Actual</button>
-              <button type="button" id="btn-val-quick-6m" class="btn-outline" style="padding: 6px 12px; font-size: 0.82rem;">6 Meses</button>
-              <button type="button" id="btn-export-validations" class="btn-primary" style="padding: 6px 16px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
-                <span class="material-symbols-rounded" style="font-size: 18px;">download</span>
+            <!-- FILA 2: Rango de Fechas, Accesos Rápidos y Botón Exportar -->
+            <div class="val-row-2" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between !important; gap: 8px !important; width: 100% !important; overflow-x: auto !important; white-space: nowrap !important;">
+              <div class="gerencial-filters-group">
+                <label class="gerencial-filter-label" for="val-input-start-date">Desde</label>
+                <input type="date" id="val-input-start-date" class="gerencial-input">
+                <label class="gerencial-filter-label" for="val-input-end-date">Hasta</label>
+                <input type="date" id="val-input-end-date" class="gerencial-input">
+              </div>
+              <div class="quick-filters-group" style="display: flex !important; flex-direction: row !important; gap: 6px !important;">
+                <button type="button" id="btn-val-quick-month" class="btn-outline" style="white-space: nowrap !important; height: 32px !important; padding: 4px 10px !important; font-size: 0.78rem !important;">Mes Actual</button>
+                <button type="button" id="btn-val-quick-6m" class="btn-outline" style="white-space: nowrap !important; height: 32px !important; padding: 4px 10px !important; font-size: 0.78rem !important;">6 Meses</button>
+              </div>
+              <button type="button" id="btn-export-validations" class="btn-primary" style="white-space: nowrap !important; height: 32px !important; padding: 4px 14px !important; font-size: 0.78rem !important; display: inline-flex !important; align-items: center !important; gap: 4px !important;">
+                <span class="material-symbols-rounded" style="font-size: 16px;">download</span>
                 <span>Exportar Excel</span>
               </button>
             </div>
           </div>
+
+
 
           <!-- Tabla de Resultados <div class="card-inner report-container">-->
           <div class="table-responsive report-scroll-container">
@@ -1365,37 +1370,45 @@
               </div>
             </div>
 
-            <!-- Filtros de fecha y colaborador -->
+            <!-- Filtros de fecha y colaborador (2 filas organizadas) -->
             <div class="gerencial-filters-bar card-inner no-print report-filter-bar" id="report-filter-bar">
-              <div class="gerencial-filters-group">
-                <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">tune</span>
-                <span style="font-weight: 600; font-size: 0.95rem;">Filtros</span>
+              <!-- FILA 1: Selección de Colaborador y Rango de Fechas -->
+              <div class="report-row-1">
+                <div class="gerencial-filters-group">
+                  <span class="material-symbols-rounded" style="color: var(--primary); font-size: 18px;">tune</span>
+                  <span style="font-weight: 600; font-size: 0.85rem;">Filtros</span>
+                </div>
+                <div class="gerencial-filters-group" style="flex: 1; min-width: 200px;">
+                  <label class="gerencial-filter-label" for="select-report-employee">Colaborador</label>
+                  <select id="select-report-employee" class="gerencial-select" style="width: 100%;">
+                    <option value="" disabled selected hidden>Seleccionar colaborador...</option>
+                  </select>
+                </div>
+                <div class="gerencial-filters-group">
+                  <label class="gerencial-filter-label" for="report-start-date">Desde</label>
+                  <input type="date" id="report-start-date" class="gerencial-input">
+                  <label class="gerencial-filter-label" for="report-end-date">Hasta</label>
+                  <input type="date" id="report-end-date" class="gerencial-input">
+                </div>
               </div>
-              <div class="gerencial-filters-group" style="flex: 1; min-width: 200px;">
-                <label class="gerencial-filter-label" for="select-report-employee">Colaborador</label>
-                <select id="select-report-employee" class="gerencial-select" style="width: 100%;">
-                  <option value="" disabled selected hidden>Seleccionar colaborador...</option>
-                </select>
+
+              <!-- FILA 2: Botones de Acción Horizontales -->
+              <div class="report-row-2">
+                <button id="btn-filter-report" class="btn-primary">
+                  <span class="material-symbols-rounded">filter_list</span>
+                  <span>Filtrar</span>
+                </button>
+                <button id="btn-export-agent-excel" class="btn-outline">
+                  <span class="material-symbols-rounded">download</span>
+                  <span>Exportar Excel</span>
+                </button>
+                <button id="btn-export-agent-pdf" class="btn-outline">
+                  <span class="material-symbols-rounded">print</span>
+                  <span>Imprimir / PDF</span>
+                </button>
               </div>
-              <div class="gerencial-filters-group">
-                <label class="gerencial-filter-label" for="report-start-date">Desde</label>
-                <input type="date" id="report-start-date" class="gerencial-input">
-                <label class="gerencial-filter-label" for="report-end-date">Hasta</label>
-                <input type="date" id="report-end-date" class="gerencial-input">
-              </div>
-              <button id="btn-filter-report" class="btn-primary" style="padding: 8px 18px; font-size: 0.85rem;">
-                <span class="material-symbols-rounded" style="font-size: 18px;">filter_list</span>
-                <span>Filtrar</span>
-              </button>
-              <button id="btn-export-agent-excel" class="btn-outline" style="padding: 8px 18px; font-size: 0.85rem;">
-                <span class="material-symbols-rounded" style="font-size: 18px;">download</span>
-                <span>Exportar Excel</span>
-              </button>
-              <button id="btn-export-agent-pdf" class="btn-outline" style="padding: 8px 18px; font-size: 0.85rem;">
-                <span class="material-symbols-rounded" style="font-size: 18px;">print</span>
-                <span>Imprimir / PDF</span>
-              </button>
             </div>
+
 
             <!-- Contenedor del Reporte -->
             <div class="report-results-wrapper">
@@ -1467,37 +1480,45 @@
               </div>
             </div>
 
-            <!-- Filtros de fecha consolidado -->
+            <!-- Filtros de fecha consolidado (2 filas exactas) -->
             <div class="gerencial-filters-bar card-inner no-print consolidated-filter-bar" id="consolidated-filter-bar">
-              <div class="gerencial-filters-group">
-                <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">tune</span>
-                <span style="font-weight: 600; font-size: 0.95rem;">Filtros</span>
+              <!-- FILA 1: Rango de Fechas + Accesos Rápidos -->
+              <div class="consolidated-row-1">
+                <div class="gerencial-filters-group">
+                  <span class="material-symbols-rounded" style="color: var(--primary); font-size: 18px;">tune</span>
+                  <span style="font-weight: 600; font-size: 0.85rem;">Filtros</span>
+                </div>
+                <div class="gerencial-filters-group">
+                  <label class="gerencial-filter-label" for="consolidated-start-date">Desde</label>
+                  <input type="date" id="consolidated-start-date" class="gerencial-input">
+                  <label class="gerencial-filter-label" for="consolidated-end-date">Hasta</label>
+                  <input type="date" id="consolidated-end-date" class="gerencial-input">
+                </div>
+                <div class="quick-filters-group" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: center !important; gap: 6px !important;">
+                  <button type="button" id="btn-quick-week" class="btn-outline" style="white-space: nowrap !important; height: 32px !important; padding: 4px 10px !important; font-size: 0.78rem !important;">Esta Semana</button>
+                  <button type="button" id="btn-quick-lastweek" class="btn-outline" style="white-space: nowrap !important; height: 32px !important; padding: 4px 10px !important; font-size: 0.78rem !important;">Semana Pasada</button>
+                  <button type="button" id="btn-quick-month" class="btn-outline" style="white-space: nowrap !important; height: 32px !important; padding: 4px 10px !important; font-size: 0.78rem !important;">Este Mes</button>
+                </div>
+
               </div>
-              <div class="gerencial-filters-group">
-                <label class="gerencial-filter-label" for="consolidated-start-date">Desde</label>
-                <input type="date" id="consolidated-start-date" class="gerencial-input">
-                <label class="gerencial-filter-label" for="consolidated-end-date">Hasta</label>
-                <input type="date" id="consolidated-end-date" class="gerencial-input">
+
+              <!-- FILA 2: Botones de Acción Horizontales -->
+              <div class="consolidated-row-2">
+                <button id="btn-filter-consolidated" class="btn-primary">
+                  <span class="material-symbols-rounded">filter_list</span>
+                  <span>Filtrar</span>
+                </button>
+                <button id="btn-export-consolidated-excel" class="btn-outline">
+                  <span class="material-symbols-rounded">download</span>
+                  <span>Exportar Excel</span>
+                </button>
+                <button id="btn-export-consolidated-pdf" class="btn-outline">
+                  <span class="material-symbols-rounded">print</span>
+                  <span>Imprimir / PDF</span>
+                </button>
               </div>
-              <div class="quick-filters-group" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button type="button" id="btn-quick-week" class="btn-outline" style="padding: 8px 12px; font-size: 0.82rem; border-radius: 6px; height: auto;">Esta Semana</button>
-                <button type="button" id="btn-quick-lastweek" class="btn-outline" style="padding: 8px 12px; font-size: 0.82rem; border-radius: 6px; height: auto;">Semana Pasada</button>
-                <button type="button" id="btn-quick-month" class="btn-outline" style="padding: 8px 12px; font-size: 0.82rem; border-radius: 6px; height: auto;">Este Mes</button>
-                <button type="button" id="btn-quick-30days" class="btn-outline" style="padding: 8px 12px; font-size: 0.82rem; border-radius: 6px; height: auto;">Últimos 30 Días</button>
-              </div>
-              <button id="btn-filter-consolidated" class="btn-primary" style="padding: 8px 18px; font-size: 0.85rem;">
-                <span class="material-symbols-rounded" style="font-size: 18px;">filter_list</span>
-                <span>Filtrar</span>
-              </button>
-              <button id="btn-export-consolidated-excel" class="btn-outline" style="padding: 8px 18px; font-size: 0.85rem;">
-                <span class="material-symbols-rounded" style="font-size: 18px;">download</span>
-                <span>Exportar Excel</span>
-              </button>
-              <button id="btn-export-consolidated-pdf" class="btn-outline" style="padding: 8px 18px; font-size: 0.85rem;">
-                <span class="material-symbols-rounded" style="font-size: 18px;">print</span>
-                <span>Imprimir / PDF</span>
-              </button>
             </div>
+
 
             <p style="margin-bottom: 20px; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5;">
               Esta tabla muestra las horas trabajadas por cada agente en cada día registrado. El tiempo de refrigerio (break) se deduce automáticamente de la jornada.

@@ -18,21 +18,21 @@
 // ── Versión del caché ─────────────────────────────────────────────────────────
 // Cambia este valor cada vez que actualices los archivos del proyecto.
 // Esto fuerza la eliminación del caché antiguo en todos los dispositivos.
-const CACHE_VERSION  = 'asistencia-msi-v1.0.2';
+const CACHE_VERSION  = 'asistencia-msi-v1.0.3';
 const CACHE_NAME     = `${CACHE_VERSION}`;
 
 // ── Lista Blanca de archivos a cachear ───────────────────────────────────────
 // SOLO estos archivos se almacenarán en el caché del dispositivo.
 // Cualquier otro recurso se solicita siempre desde el servidor.
 const PRECACHE_ASSETS = [
-  '/Asistencia/',
-  '/Asistencia/index.html',
-  '/Asistencia/app.js',
-  '/Asistencia/styles.css',
-  '/Asistencia/manifest.json',
-  '/Asistencia/icono.png',
-  '/Asistencia/icons/icon-192x192.png',
-  '/Asistencia/icons/icon-512x512.png'
+  '/msi-assistance/',
+  '/msi-assistance/index.html',
+  '/msi-assistance/app.js',
+  '/msi-assistance/styles.css',
+  '/msi-assistance/manifest.json',
+  '/msi-assistance/icono.png',
+  '/msi-assistance/icons/icon-192x192.png',
+  '/msi-assistance/icons/icon-512x512.png'
 ];
 
 // ── Dominios externos permitidos para FETCH (sin cachear) ────────────────────
@@ -41,8 +41,10 @@ const ALLOWED_EXTERNAL_ORIGINS = [
   'https://fonts.googleapis.com',
   'https://fonts.gstatic.com',
   'https://cdn.jsdelivr.net',
-  'https://script.google.com'
+  'https://script.google.com',
+  'https://script.googleusercontent.com'
 ];
+
 
 // =============================================================================
 // EVENTO: INSTALL — Pre-cacheo de la lista blanca
