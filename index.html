@@ -4,7 +4,50 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Asistencia-MSI</title>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SEGURIDAD: Content Security Policy (CSP)
+       Bloquea scripts, estilos e imágenes de orígenes no autorizados.
+       Previene ataques XSS e inyección de código malicioso.
+  ════════════════════════════════════════════════════════════════ -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src  'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src    'self' https://fonts.gstatic.com;
+    img-src     'self' data: blob: https:;
+    connect-src 'self' https://script.google.com https://fonts.googleapis.com;
+    object-src  'none';
+    base-uri    'self';
+    form-action 'self';
+  ">
+  <!-- Evita que el navegador adivine el tipo de contenido (MIME sniffing) -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <!-- No permitir que esta página sea embebida en iframes de terceros -->
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       PWA: Web App Manifest
+  ════════════════════════════════════════════════════════════════ -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ef4444">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- PWA: Soporte iOS (Safari / iPhone / iPad) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AsistenciaMSI">
+  <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.png">
+
+  <!-- SEO & Open Graph -->
+  <meta name="description" content="Portal de Registro de Jornada Laboral - AsistenciaMSI">
+  <meta name="application-name" content="AsistenciaMSI">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96x96.png">
   <link rel="icon" type="image/png" href="icono.png">
+
   <!-- Google Fonts & Material Symbols -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1461,7 +1504,7 @@
             </p>
 
             <div class="table-responsive report-scroll-container">
-              <table class="admin-table">
+              <table class="admin-table table-sticky-colaborador-dni">
                 <thead id="admin-consolidated-thead">
                   <tr>
                     <th>Colaborador</th>
@@ -1536,7 +1579,7 @@
             </p>
 
             <div class="table-responsive report-scroll-container">
-              <table class="admin-table">
+              <table class="admin-table table-sticky-colaborador-dni">
                 <thead id="admin-monthly-thead">
                   <tr>
                     <th>Colaborador</th>
@@ -2064,5 +2107,112 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <!-- Script Principal de la Aplicación -->
   <script src="app.js?v=20260725_48"></script>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       PWA: Registro del Service Worker
+       Se ejecuta DESPUÉS de que toda la página ha cargado.
+  ════════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      // Solo registrar si el navegador soporta Service Workers
+      if (!('serviceWorker' in navigator)) {
+        console.info('[PWA] Service Worker no soportado en este navegador.');
+        return;
+      }
+
+      // Esperar a que la página esté completamente cargada
+      window.addEventListener('load', function () {
+
+        navigator.serviceWorker
+          .register('/Asistencia/service-worker.js', {
+            scope: '/Asistencia/'
+          })
+          .then(function (registration) {
+            console.info('[PWA] Service Worker registrado. Alcance:', registration.scope);
+
+            // Detectar actualizaciones disponibles del SW
+            registration.addEventListener('updatefound', function () {
+              var newWorker = registration.installing;
+              if (!newWorker) return;
+
+              newWorker.addEventListener('statechange', function () {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Hay una nueva versión disponible → mostrar aviso al usuario
+                  console.info('[PWA] Nueva versión disponible.');
+                  showPwaUpdateBanner();
+                }
+              });
+            });
+
+            // Verificar actualizaciones cada 60 segundos (en segundo plano)
+            setInterval(function () {
+              registration.update().catch(function () {});
+            }, 60000);
+          })
+          .catch(function (error) {
+            console.error('[PWA] Error al registrar Service Worker:', error);
+          });
+
+        // Recargar la página cuando un nuevo SW toma control
+        var refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+      });
+
+      /**
+       * Muestra un banner de actualización no invasivo.
+       * El usuario decide cuándo recargar.
+       */
+      function showPwaUpdateBanner() {
+        if (document.getElementById('pwa-update-banner')) return;
+
+        var banner = document.createElement('div');
+        banner.id = 'pwa-update-banner';
+        banner.style.cssText = [
+          'position:fixed', 'bottom:20px', 'left:50%',
+          'transform:translateX(-50%)', 'z-index:99999',
+          'background:#1e1e2e', 'color:#fff',
+          'border:1px solid #ef4444', 'border-radius:12px',
+          'padding:14px 20px', 'display:flex', 'align-items:center',
+          'gap:14px', 'box-shadow:0 8px 32px rgba(239,68,68,0.3)',
+          'font-family:system-ui,sans-serif', 'font-size:14px',
+          'max-width:calc(100vw - 40px)'
+        ].join(';');
+
+        banner.innerHTML = [
+          '<span style="font-size:20px">🔄</span>',
+          '<span>Nueva versión disponible</span>',
+          '<button id="pwa-update-btn" style="',
+            'background:#ef4444;color:#fff;border:none;border-radius:8px;',
+            'padding:8px 16px;cursor:pointer;font-weight:600;font-size:13px',
+          '">Actualizar</button>',
+          '<button id="pwa-dismiss-btn" style="',
+            'background:transparent;color:#aaa;border:1px solid #555;',
+            'border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px',
+          '">✕</button>'
+        ].join('');
+
+        document.body.appendChild(banner);
+
+        document.getElementById('pwa-update-btn').addEventListener('click', function () {
+          navigator.serviceWorker.controller &&
+            navigator.serviceWorker.controller.postMessage({ action: 'SKIP_WAITING' });
+          banner.remove();
+        });
+
+        document.getElementById('pwa-dismiss-btn').addEventListener('click', function () {
+          banner.remove();
+        });
+      }
+
+    }());
+  </script>
+
 </body>
 </html>
