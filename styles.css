@@ -4195,27 +4195,31 @@ body.light-theme .btn-admin-edit:hover {
   .admin-top-actions .btn-top-sync  { flex: 1 !important; height: 40px !important; justify-content: center !important; font-size: 0.82rem !important; }
   .admin-top-actions .btn-top-close { flex: 1 !important; height: 40px !important; justify-content: center !important; font-size: 0.82rem !important; }
 
-  /* ─── BOTTOM NAVIGATION BAR: el nuevo elemento HTML ─── */
+  /* ─── BOTTOM NAVIGATION BAR: fijo en la parte inferior de la pantalla ─── */
   .admin-mobile-bottom-nav {
-    order: 3 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
     display: flex !important;
     flex-direction: row !important;
-    flex-shrink: 0 !important;
-    width: 100% !important;
+    width: 100vw !important;
     height: auto !important;
     background: var(--bg-secondary) !important;
     border-top: 1px solid var(--border-color) !important;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.18) !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.25) !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
     /* Fade en extremos */
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
-    mask-image:         linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%) !important;
+    mask-image:         linear-gradient(to right, transparent 0%, black 4%, black 96%, transparent 100%) !important;
   }
   .admin-mobile-bottom-nav::-webkit-scrollbar { display: none !important; }
+
 
   /* Cada botón del bottom nav */
   .admin-mob-tab {
