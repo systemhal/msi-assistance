@@ -4083,3 +4083,225 @@ body.light-theme .btn-admin-edit:hover {
     grid-template-columns: 38px 38px 1fr !important;
   }
 }
+
+/* =============================================================================
+   ADMIN BOTTOM NAV — Mobile App Style (Facebook / Instagram pattern)
+   Selector: .admin-mobile-bottom-nav  (nuevo elemento HTML en #view-admin)
+   ============================================================================= */
+
+/* ── DESKTOP: ocultar el bottom nav ── */
+.admin-mobile-bottom-nav {
+  display: none;
+}
+
+/* ── MOBILE (≤ 992px): mostrar como app nativa ── */
+@media (max-width: 992px) {
+
+  /* ─── Layout del contenedor #view-admin como app móvil ─── */
+  #view-admin.admin-layout-sidebar:not(.hidden) {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    grid-template-columns: unset !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--bg-page) !important;
+    z-index: 900 !important;
+  }
+
+  /* ─── TOP APP BAR: sidebar = cabecera de app ─── */
+  .admin-sidebar {
+    order: 1 !important;
+    flex-shrink: 0 !important;
+    height: auto !important;
+    position: relative !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    background: var(--bg-secondary) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2) !important;
+    z-index: 50 !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  /* Brand: logo + nombre + badge */
+  .admin-sidebar-brand {
+    display: flex !important;
+    align-items: center !important;
+    padding: 10px 16px !important;
+    gap: 10px !important;
+    min-height: 56px !important;
+    border-bottom: none !important;
+  }
+  .admin-sidebar-brand h2 {
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    flex: 1 !important;
+    margin: 0 !important;
+    color: var(--text-primary) !important;
+  }
+
+  /* Ocultar nav vertical del sidebar en mobile */
+  .admin-sidebar-nav-container { display: none !important; }
+  .admin-sidebar-footer         { display: none !important; }
+  .sidebar-nav-title            { display: none !important; }
+
+  /* ─── CONTENIDO CENTRAL: scrolleable ─── */
+  .admin-main-content {
+    order: 2 !important;
+    flex: 1 1 0 !important;
+    height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 14px !important;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+    background: var(--bg-page) !important;
+    scroll-behavior: smooth !important;
+  }
+
+  /* Top bar: sticky dentro del contenido (título + acciones) */
+  .admin-top-bar {
+    position: sticky !important;
+    top: -14px !important;
+    z-index: 10 !important;
+    background: var(--bg-page) !important;
+    margin: -14px -14px 16px !important;
+    padding: 12px 14px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+  .admin-page-title   { font-size: 1.15rem !important; flex: 1 !important; }
+  .admin-top-info     { display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important; }
+  .admin-top-actions  { display: flex !important; gap: 8px !important; width: 100% !important; }
+  .admin-top-actions .btn-top-theme { width: 40px !important; height: 40px !important; flex-shrink: 0 !important; }
+  .admin-top-actions .btn-top-sync  { flex: 1 !important; height: 40px !important; justify-content: center !important; font-size: 0.82rem !important; }
+  .admin-top-actions .btn-top-close { flex: 1 !important; height: 40px !important; justify-content: center !important; font-size: 0.82rem !important; }
+
+  /* ─── BOTTOM NAVIGATION BAR: el nuevo elemento HTML ─── */
+  .admin-mobile-bottom-nav {
+    order: 3 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-color) !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.18) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    /* Fade en extremos */
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+    mask-image:         linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%) !important;
+  }
+  .admin-mobile-bottom-nav::-webkit-scrollbar { display: none !important; }
+
+  /* Cada botón del bottom nav */
+  .admin-mob-tab {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 0 64px !important;
+    min-width: 60px !important;
+    max-width: 90px !important;
+    gap: 3px !important;
+    padding: 9px 6px 7px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    font-family: var(--font-display) !important;
+    font-size: 0.62rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    transition: color 0.2s ease !important;
+    position: relative !important;
+    -webkit-tap-highlight-color: transparent !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+
+  /* Ícono */
+  .admin-mob-tab .material-symbols-rounded {
+    font-size: 24px !important;
+    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), color 0.2s ease !important;
+  }
+
+  /* Ripple al tocar */
+  .admin-mob-tab:active {
+    background: rgba(var(--primary-rgb, 99,102,241), 0.08) !important;
+  }
+  .admin-mob-tab:active .material-symbols-rounded {
+    transform: scale(0.9) !important;
+  }
+
+  /* ─── ESTADO ACTIVO: estilo Instagram/Facebook ─── */
+  .admin-mob-tab.active {
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+  }
+  .admin-mob-tab.active .material-symbols-rounded {
+    color: var(--primary) !important;
+    transform: scale(1.12) translateY(-1px) !important;
+    font-variation-settings: 'FILL' 1 !important;
+  }
+
+  /* Indicador: pequeña línea en la parte superior del tab activo */
+  .admin-mob-tab.active::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 28px !important;
+    height: 3px !important;
+    background: var(--primary) !important;
+    border-radius: 0 0 4px 4px !important;
+    animation: mob-tab-indicator 0.25s ease !important;
+  }
+  @keyframes mob-tab-indicator {
+    from { width: 0; opacity: 0; }
+    to   { width: 28px; opacity: 1; }
+  }
+}
+
+/* ── Mobile pequeño (≤ 480px) ── */
+@media (max-width: 480px) {
+  .admin-sidebar-brand { padding: 8px 12px !important; min-height: 50px !important; }
+  .admin-sidebar-brand h2 { font-size: 0.9rem !important; }
+  .admin-mob-tab { min-width: 52px !important; font-size: 0.58rem !important; padding: 8px 4px 6px !important; }
+  .admin-mob-tab .material-symbols-rounded { font-size: 22px !important; }
+  .admin-top-actions .btn-top-sync > span:last-child { display: none !important; }
+  .admin-top-actions .btn-top-sync { flex: 0 0 40px !important; padding: 0 !important; }
+  .admin-main-content { padding: 12px 10px !important; padding-bottom: calc(65px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+/* ── iPhone SE (≤ 375px) ── */
+@media (max-width: 375px) {
+  .admin-mob-tab { min-width: 46px !important; font-size: 0.54rem !important; padding: 7px 3px 5px !important; }
+  .admin-mob-tab .material-symbols-rounded { font-size: 20px !important; }
+}
+

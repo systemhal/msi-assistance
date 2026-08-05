@@ -1607,7 +1607,47 @@
 
 
           </div>
-        </div> <!-- Fin de .admin-main-content -->
+          </div> <!-- Fin de .admin-main-content -->
+
+        <!-- ════════════════════════════════════════════════════════════
+             BOTTOM NAVIGATION BAR — Solo visible en mobile (≤ 992px)
+             Patrón: Facebook / Instagram / Google app
+             ════════════════════════════════════════════════════════════ -->
+        <nav class="admin-mobile-bottom-nav" id="admin-mobile-bottom-nav" aria-label="Navegación principal admin">
+          <button class="admin-mob-tab active" data-tab="live"         onclick="switchAdminTab('live')"         aria-label="Monitoreo en Vivo">
+            <span class="material-symbols-rounded">sensors</span>
+            <span>Vivo</span>
+          </button>
+          <button class="admin-mob-tab" data-tab="daily"        onclick="switchAdminTab('daily')"        aria-label="Resumen Diario">
+            <span class="material-symbols-rounded">calendar_today</span>
+            <span>Diario</span>
+          </button>
+          <button class="admin-mob-tab" data-tab="consolidated" onclick="switchAdminTab('consolidated')" aria-label="Resumen General">
+            <span class="material-symbols-rounded">table_chart</span>
+            <span>General</span>
+          </button>
+          <button class="admin-mob-tab" data-tab="monthly"      onclick="switchAdminTab('monthly')"      aria-label="Resumen Mensual">
+            <span class="material-symbols-rounded">calendar_month</span>
+            <span>Mensual</span>
+          </button>
+          <button class="admin-mob-tab" data-tab="reports"      onclick="switchAdminTab('reports')"      aria-label="Reportes por Agente">
+            <span class="material-symbols-rounded">analytics</span>
+            <span>Reportes</span>
+          </button>
+          <button class="admin-mob-tab" data-tab="gerencial"    onclick="switchAdminTab('gerencial')"    aria-label="Vista Gerencial">
+            <span class="material-symbols-rounded">leaderboard</span>
+            <span>Gerencial</span>
+          </button>
+          <button class="admin-mob-tab" data-tab="validations"  onclick="switchAdminTab('validations')"  aria-label="Validaciones">
+            <span class="material-symbols-rounded">gavel</span>
+            <span>Validar</span>
+          </button>
+          <button class="admin-mob-tab" data-tab="register"     onclick="switchAdminTab('register')"     aria-label="Configuración">
+            <span class="material-symbols-rounded">settings</span>
+            <span>Config</span>
+          </button>
+        </nav>
+
       </section>
 
     </main>

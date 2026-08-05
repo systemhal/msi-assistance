@@ -110,44 +110,88 @@ function findEmployeeByDni(dni) {
 }
 
 /**
- * Evalúa si un colaborador debe mostrarse activo en una fecha objetivo (por defecto hoy).
- * @param {Object} employee - El objeto del empleado de la BD
- * @param {String} targetDateStr - Fecha objetivo en formato 'DD/MM/YYYY'. Si se omite, usa hoy.
- * @returns {Boolean} true si está activo, false si está de baja y la fecha de baja ya pasó o es igual a la objetivo.
+ * Convierte un string de fecha de baja ('YYYY-MM-DD' o 'DD/MM/YYYY') a objeto Date.
+ */
+function parseFechaBaja(fechaBajaStr) {
+  if (!fechaBajaStr) return null;
+  let s = String(fechaBajaStr).trim();
+  if (s.includes('T')) s = s.split('T')[0];
+  
+  if (s.includes('/')) {
+    const p = s.split('/');
+    if (p.length === 3) return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+  } else if (s.includes('-')) {
+    const p = s.split('-');
+    if (p.length === 3) return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  }
+  return null;
+}
+
+/**
+ * Evalúa si un colaborador debe ser visible en los reportes del mes consultado.
+ * Si fue dado de baja, se muestra durante el mes de baja (y meses anteriores), pero NO en el mes siguiente.
+ */
+function isEmployeeVisibleInMonth(employee, targetMonthIndex, targetYear) {
+  if (!employee) return false;
+  const est = String(employee.estado || 'Activo').trim().toLowerCase();
+  if (est !== 'baja') return true;
+  if (!employee.fechaBaja) return false;
+
+  const bajaDate = parseFechaBaja(employee.fechaBaja);
+  if (!bajaDate || isNaN(bajaDate.getTime())) return false;
+
+  const bajaMonth = bajaDate.getMonth();
+  const bajaYear = bajaDate.getFullYear();
+
+  if (targetYear < bajaYear) return true;
+  if (targetYear === bajaYear && targetMonthIndex <= bajaMonth) return true;
+
+  return false;
+}
+
+/**
+ * Obtiene el estado del colaborador ('ACTIVO' o 'BAJA') para una fecha específica ('DD/MM/YYYY').
+ */
+function getEmployeeStatusForDate(employee, dateStr) {
+  if (!employee) return 'INACTIVO';
+  const est = String(employee.estado || 'Activo').trim().toLowerCase();
+  if (est !== 'baja') return 'ACTIVO';
+  if (!employee.fechaBaja) return 'BAJA';
+
+  const bajaDate = parseFechaBaja(employee.fechaBaja);
+  if (!bajaDate || isNaN(bajaDate.getTime())) return 'ACTIVO';
+
+  const parts = dateStr.split('/');
+  if (parts.length !== 3) return 'ACTIVO';
+  const targetDate = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+
+  bajaDate.setHours(0,0,0,0);
+  targetDate.setHours(0,0,0,0);
+
+  return targetDate.getTime() >= bajaDate.getTime() ? 'BAJA' : 'ACTIVO';
+}
+
+/**
+ * Evalúa si un colaborador está activo para la fecha actual o una fecha objetivo.
  */
 function isEmployeeActive(employee, targetDateStr = null) {
   if (!employee) return false;
   const est = String(employee.estado || 'Activo').trim().toLowerCase();
   if (est !== 'baja') return true;
-  if (!employee.fechaBaja) return true;
+  if (!employee.fechaBaja) return false;
 
-  const targetDate = targetDateStr ? window.parseDayMonthYear(targetDateStr) : new Date();
-  targetDate.setHours(0,0,0,0);
-  
-  let dateStr = String(employee.fechaBaja).trim();
-  if (dateStr.includes('T')) {
-    dateStr = dateStr.split('T')[0];
+  if (targetDateStr) {
+    return getEmployeeStatusForDate(employee, targetDateStr) === 'ACTIVO';
   }
 
-  let bajaDate = null;
-  if (dateStr.includes('-')) {
-    const parts = dateStr.split('-');
-    if (parts.length >= 3) {
-      bajaDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    }
-  } else if (dateStr.includes('/')) {
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      bajaDate = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-    }
-  }
-
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const bajaDate = parseFechaBaja(employee.fechaBaja);
   if (bajaDate && !isNaN(bajaDate.getTime())) {
     bajaDate.setHours(0,0,0,0);
-    return targetDate < bajaDate;
+    return today.getTime() < bajaDate.getTime();
   }
-  
-  return true;
+  return false;
 }
 let tardinessTolerance = 5; 
 let cachedAgentHistory = [];
@@ -1403,12 +1447,12 @@ function setupEventListeners() {
   const attendanceButtons = [btnIngreso, btnBreakIn, btnBreakOut, btnSalida];
   
   attendanceButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const action = btn.getAttribute('data-action');
       const dni = currentSession ? currentSession.dni : null;
       const employee = dni ? employeesDatabase[dni] : null;
 
-      // Restricción en Feriados, Días de Descanso e Ingreso Anticipado
+      // Restricción en Feriados, Días de Descanso e Ingreso Anticipado para 'Ingreso'
       if (action === 'Ingreso' && employee) {
         const now = new Date();
         const normToday = getTodayNormalizedDateStr(now);
@@ -1473,6 +1517,42 @@ function setupEventListeners() {
               return;
             }
           }
+        }
+      } else {
+        // Ventana Flotante de Confirmación para Inicio Break, Fin Break y Salida
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+        let confirmConfig = null;
+        if (action === 'Inicio Refrigerio') {
+          confirmConfig = {
+            title: 'Confirmar Inicio de Refrigerio 🥪',
+            message: `¿Estás seguro de que deseas registrar tu <strong>Inicio de Break</strong> a las <strong>${timeStr}</strong>?`,
+            type: 'warning',
+            acceptText: 'Sí, Iniciar Break',
+            cancelText: 'Cancelar'
+          };
+        } else if (action === 'Fin Refrigerio') {
+          confirmConfig = {
+            title: 'Confirmar Fin de Refrigerio ☕',
+            message: `¿Estás seguro de que deseas registrar tu <strong>Fin de Break</strong> a las <strong>${timeStr}</strong>?`,
+            type: 'info',
+            acceptText: 'Sí, Finalizar Break',
+            cancelText: 'Cancelar'
+          };
+        } else if (action === 'Salida') {
+          confirmConfig = {
+            title: 'Confirmar Salida de Jornada 🚪',
+            message: `¿Estás seguro de que deseas registrar tu <strong>Salida de Jornada</strong> a las <strong>${timeStr}</strong>?`,
+            type: 'danger',
+            acceptText: 'Sí, Registrar Salida',
+            cancelText: 'Cancelar'
+          };
+        }
+
+        if (confirmConfig) {
+          const confirmed = await showCustomConfirm(confirmConfig);
+          if (!confirmed) return; // Si el colaborador cancela, detiene el proceso de marcación
         }
       }
 
@@ -2348,6 +2428,15 @@ function switchAdminTab(targetTab) {
     }
   });
 
+  // ── Sincronizar bottom nav mobile ──
+  document.querySelectorAll('.admin-mob-tab').forEach(b => {
+    if (b.getAttribute('data-tab') === targetTab) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+
   tabContents.forEach(c => {
     c.classList.remove('active');
     c.classList.add('hidden');
@@ -2397,24 +2486,7 @@ function switchAdminTab(targetTab) {
 }
 window.switchAdminTab = switchAdminTab;
 
-function setupAdminTabs() {
-  const tabButtons = document.querySelectorAll('.btn-admin-tab');
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const targetTab = btn.getAttribute('data-tab');
-      if (targetTab) switchAdminTab(targetTab);
-    });
-  });
 
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-admin-tab');
-    if (btn) {
-      const targetTab = btn.getAttribute('data-tab');
-      if (targetTab) switchAdminTab(targetTab);
-    }
-  });
-}
 
 /* ==========================================================================
    TOAST NOTIFICATION ENGINE
@@ -3531,22 +3603,37 @@ function updateReportEmployeeSelect() {
   }
 }
 
-// Obtener el historial completo consolidado desde el cache local
+// Obtener el historial completo consolidado desde el cache local (Optimizado O(N))
 function getAllCachedHistory() {
   const history = [];
+  const seenKeys = new Set();
+  
   Object.keys(employeesDatabase).forEach(dni => {
+    const cleanEmpDni = String(dni).replace(/'/g, '').trim();
     if (attendanceState[dni] && Array.isArray(attendanceState[dni].history)) {
       attendanceState[dni].history.forEach(item => {
-        const itemWithDni = { ...item, dni: item.dni || dni };
-        const exists = history.some(h => 
-          h.dni === itemWithDni.dni && h.timestamp === itemWithDni.timestamp && h.action === itemWithDni.action
-        );
-        if (!exists) {
-          history.push(itemWithDni);
+        const itemDni = String(item.dni || cleanEmpDni).replace(/'/g, '').trim();
+        const key = `${itemDni}_${item.timestamp}_${item.action}`;
+        if (!seenKeys.has(key)) {
+          seenKeys.add(key);
+          history.push({ ...item, dni: itemDni });
         }
       });
     }
   });
+
+  if (Array.isArray(globalLogs)) {
+    globalLogs.forEach(item => {
+      const cleanDni = String(item.dni || '').replace(/'/g, '').trim();
+      if (!cleanDni) return;
+      const key = `${cleanDni}_${item.timestamp}_${item.action}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        history.push({ ...item, dni: cleanDni });
+      }
+    });
+  }
+
   return history;
 }
 
@@ -4075,7 +4162,16 @@ function renderConsolidatedTable(history) {
   });
 
   // 6. Preparar y calcular datos por colaborador
-  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeActive(employeesDatabase[dni]));
+  let refMonth = new Date().getMonth();
+  let refYear = new Date().getFullYear();
+  if (sortedDates.length > 0) {
+    const p = sortedDates[0].split('/');
+    if (p.length === 3) {
+      refMonth = parseInt(p[1], 10) - 1;
+      refYear = parseInt(p[2], 10);
+    }
+  }
+  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeVisibleInMonth(employeesDatabase[dni], refMonth, refYear));
   
   if (dnis.length === 0) {
     tbody.innerHTML = `<tr><td colspan="${5 + sortedDates.length}" class="text-center text-muted" style="padding: 25px;">No hay colaboradores en la base de datos.</td></tr>`;
@@ -4175,7 +4271,13 @@ function renderConsolidatedTable(history) {
         let cellText = 'Falta';
         let tooltip = `Fecha: ${dateStr}`;
         
-        if (justification) {
+        const empStatusForDate = getEmployeeStatusForDate(employee, dateStr);
+
+        if (empStatusForDate === 'BAJA') {
+          cellClass = 'cell-baja';
+          cellText = 'Baja';
+          tooltip += `\nColaborador dado de baja (${employee.fechaBaja || ''})`;
+        } else if (justification) {
           cellClass = 'cell-justified';
           cellText = `Justif: ${justification.type}`;
           tooltip += `\nJustificación: ${justification.type}\nDetalle: ${justification.details}`;
@@ -5181,9 +5283,19 @@ function exportConsolidatedExcel() {
   rows.push(header);
   
   // Filas por cada colaborador
+  let refMonth = new Date().getMonth();
+  let refYear = new Date().getFullYear();
+  if (sortedDates.length > 0) {
+    const p = sortedDates[0].split('/');
+    if (p.length === 3) {
+      refMonth = parseInt(p[1], 10) - 1;
+      refYear = parseInt(p[2], 10);
+    }
+  }
+
   Object.keys(employeesDatabase).forEach(dni => {
     const employee = employeesDatabase[dni];
-    if (!isEmployeeActive(employee)) return;
+    if (!isEmployeeVisibleInMonth(employee, refMonth, refYear)) return;
     const row = [employee.name, dni];
     
     let totalWorkedSeconds = 0;
@@ -5266,7 +5378,10 @@ function exportConsolidatedExcel() {
           row.push(`--${tardyMarker}`);
         }
       } else {
-        if (justification) {
+        const empStatusForDate = getEmployeeStatusForDate(employee, dateStr);
+        if (empStatusForDate === 'BAJA') {
+          row.push("Baja");
+        } else if (justification) {
           row.push(`Justificado: ${justification.type}`);
         } else if (isHoliday) {
           row.push("Feriado");
@@ -5504,7 +5619,7 @@ function renderDailySummaryTable(history) {
   }
 
   const staffIds = Object.keys(employeesDatabase)
-    .filter(dni => isEmployeeActive(employeesDatabase[dni]))
+    .filter(dni => isEmployeeVisibleInMonth(employeesDatabase[dni], parseInt(monthStr, 10) - 1, parseInt(yearStr, 10)))
     .sort((a, b) => employeesDatabase[a].name.localeCompare(employeesDatabase[b].name));
 
   if (staffIds.length === 0) {
@@ -5616,7 +5731,11 @@ function renderDailySummaryTable(history) {
       }
 
     } else {
-      if (justification) {
+      const empStatusForDate = getEmployeeStatusForDate(employee, selectedDateStr);
+      if (empStatusForDate === 'BAJA') {
+        statusBadge = `<span class="table-status-badge Desconectado" style="background: rgba(148, 163, 184, 0.2); color: #64748b; border: 1px solid #cbd5e1;">Baja</span>`;
+        rowClass = 'row-baja';
+      } else if (justification) {
         statusBadge = `<span class="table-status-badge Inicio-Refrigerio" title="${justification.details}">Justificado: ${justification.type}</span>`;
         rowClass = 'row-justified';
       } else if (isHoliday) {
@@ -5952,7 +6071,7 @@ function renderMonthlyTable(history) {
   const totalDaysInMonth = new Date(year, monthIndex + 1, 0).getDate();
 
   tbody.innerHTML = '';
-  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeActive(employeesDatabase[dni]));
+  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeVisibleInMonth(employeesDatabase[dni], monthIndex, year));
   
   if (dnis.length === 0) {
     tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted" style="padding: 25px;">No hay colaboradores registrados.</td></tr>';
@@ -5996,6 +6115,12 @@ function renderMonthlyTable(history) {
       
       const d = new Date(year, monthIndex, day);
       const dayOfWeek = d.getDay();
+
+      const empStatusForDate = getEmployeeStatusForDate(employee, dateStr);
+      if (empStatusForDate === 'BAJA') {
+        // Dado de baja en esta fecha: no genera día laborable ni falta
+        continue;
+      }
 
       const isCustomHoliday = feriadosDatabase.some(f => normalizeDateStr(f.dateStr) === normalizeDateStr(dateStr));
       const isHoliday = GLOBAL_FERIADOS.includes(dayMonth) || isCustomHoliday;
@@ -6195,7 +6320,7 @@ function exportMonthlyExcel() {
   ];
   rows.push(header);
 
-  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeActive(employeesDatabase[dni]));
+  const dnis = Object.keys(employeesDatabase).filter(dni => isEmployeeVisibleInMonth(employeesDatabase[dni], monthIndex, year));
   dnis.forEach(dni => {
     const employee = employeesDatabase[dni];
     const isFlexible = (employee.workStart === "-" || employee.workStart === "—" || employee.weeklySchedule === "flexible");
@@ -6228,6 +6353,11 @@ function exportMonthlyExcel() {
       
       const d = new Date(year, monthIndex, day);
       const dayOfWeek = d.getDay();
+
+      const empStatusForDate = getEmployeeStatusForDate(employee, dateStr);
+      if (empStatusForDate === 'BAJA') {
+        continue;
+      }
 
       const isCustomHoliday = feriadosDatabase.some(f => normalizeDateStr(f.dateStr) === normalizeDateStr(dateStr));
       const isHoliday = GLOBAL_FERIADOS.includes(dayMonth) || isCustomHoliday;
@@ -9033,44 +9163,7 @@ function getWeekOfYear(dateObj) {
   return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
-function getAllCachedHistory() {
-  const history = [];
-  
-  Object.keys(employeesDatabase).forEach(dni => {
-    const cleanEmpDni = String(dni).replace(/'/g, '').trim();
-    if (attendanceState[dni] && Array.isArray(attendanceState[dni].history)) {
-      attendanceState[dni].history.forEach(item => {
-        const itemDni = String(item.dni || cleanEmpDni).replace(/'/g, '').trim();
-        const itemWithDni = { ...item, dni: itemDni };
-        const exists = history.some(h => 
-          String(h.dni).replace(/'/g, '').trim() === itemWithDni.dni && 
-          h.timestamp === itemWithDni.timestamp && 
-          h.action === itemWithDni.action
-        );
-        if (!exists) {
-          history.push(itemWithDni);
-        }
-      });
-    }
-  });
 
-  if (Array.isArray(globalLogs)) {
-    globalLogs.forEach(item => {
-      const cleanDni = String(item.dni || '').replace(/'/g, '').trim();
-      if (!cleanDni) return;
-      const exists = history.some(h => 
-        String(h.dni).replace(/'/g, '').trim() === cleanDni && 
-        h.timestamp === item.timestamp && 
-        h.action === item.action
-      );
-      if (!exists) {
-        history.push({ ...item, dni: cleanDni });
-      }
-    });
-  }
-
-  return history;
-}
 
 function isEmployeeFlexibleSchedule(emp) {
   if (!emp) return false;
@@ -9263,8 +9356,9 @@ function renderValidationsView() {
             let statusTag = '';
             let isTardanzaEfectiva = false;
 
-            if (minsLate > 10) {
-              dictamen = `Exceso >10m (${minsLate} min)`;
+            const tolThreshold = (typeof tardinessTolerance === 'number' && tardinessTolerance > 0) ? tardinessTolerance : 10;
+            if (minsLate > tolThreshold) {
+              dictamen = `Exceso >${tolThreshold}m (${minsLate} min)`;
               statusTag = 'exceeded';
               isTardanzaEfectiva = true;
             } else {
