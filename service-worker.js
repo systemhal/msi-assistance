@@ -18,22 +18,23 @@
 // ── Versión del caché ─────────────────────────────────────────────────────────
 // Cambia este valor cada vez que actualices los archivos del proyecto.
 // Esto fuerza la eliminación del caché antiguo en todos los dispositivos.
-const CACHE_VERSION  = 'asistencia-msi-v1.0.3';
+const CACHE_VERSION  = 'asistencia-msi-v1.0.4';
 const CACHE_NAME     = `${CACHE_VERSION}`;
 
 // ── Lista Blanca de archivos a cachear ───────────────────────────────────────
 // SOLO estos archivos se almacenarán en el caché del dispositivo.
 // Cualquier otro recurso se solicita siempre desde el servidor.
 const PRECACHE_ASSETS = [
-  '/msi-assistance/',
-  '/msi-assistance/index.html',
-  '/msi-assistance/app.js',
-  '/msi-assistance/styles.css',
-  '/msi-assistance/manifest.json',
-  '/msi-assistance/icono.png',
-  '/msi-assistance/icons/icon-192x192.png',
-  '/msi-assistance/icons/icon-512x512.png'
+  './',
+  './index.html',
+  './app.js',
+  './styles.css',
+  './manifest.json',
+  './icono.png',
+  './icons/icon-192x192.png',
+  './icons/icon-512x512.png'
 ];
+
 
 // ── Dominios externos permitidos para FETCH (sin cachear) ────────────────────
 // Solo se permite pasar peticiones a estos dominios de confianza.
