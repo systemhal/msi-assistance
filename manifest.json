@@ -2,8 +2,9 @@
   "name": "AsistenciaMSI - Control de Asistencia",
   "short_name": "AsistenciaMSI",
   "description": "Portal de Registro de Jornada Laboral para el equipo MSI",
-  "start_url": "/Asistencia/",
-  "scope": "/Asistencia/",
+  "start_url": "./index.html?pwa_v=105",
+  "scope": "./",
+
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0f0f1a",
