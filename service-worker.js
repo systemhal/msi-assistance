@@ -18,7 +18,7 @@
 // ── Versión del caché ─────────────────────────────────────────────────────────
 // Cambia este valor cada vez que actualices los archivos del proyecto.
 // Esto fuerza la eliminación del caché antiguo en todos los dispositivos.
-const CACHE_VERSION  = 'asistencia-msi-v1.0.4';
+const CACHE_VERSION  = 'asistencia-msi-v1.0.5';
 const CACHE_NAME     = `${CACHE_VERSION}`;
 
 // ── Lista Blanca de archivos a cachear ───────────────────────────────────────
@@ -34,6 +34,7 @@ const PRECACHE_ASSETS = [
   './icons/icon-192x192.png',
   './icons/icon-512x512.png'
 ];
+
 
 
 // ── Dominios externos permitidos para FETCH (sin cachear) ────────────────────
